@@ -38,7 +38,7 @@ Description:
 Example usage:
     module load EasyBuild
     module load R
-    generateEasyConfig.R  --tc  goolf/1.7.20 \\
+    generateEasyConfig.R  --tc  foss/2018b \\
                           --od  /path/to/my/EasyConfigs/r/R/ \\
                           --ll  WARNING 
 
