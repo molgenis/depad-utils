@@ -1,3 +1,23 @@
+*.DS_Store
+*.project
+*.settings
+*.md.html
+*.includepath
+*.vagrant
+*.pydevproject
+
+# ansible retry files
+*.retry
+
+# vim swap files
+*.swp
+
+# Python stuff
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Perl stuff
 !Build/
 .last_cover_stats
 /META.yml
