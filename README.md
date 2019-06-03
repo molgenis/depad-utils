@@ -16,11 +16,11 @@ Utilities for deploy admins.
 
 ### Tools.
 
-- [hpc-environment-sync.bash](#-hpc-environment-sync): Synchronize deployed software, modules and reference data from primary to a secondary location.
-- [GetPerlModuleDepTreeFromCPAN.pl](#-GetPerlModuleDepTreeFromCPAN): Helper script for making EasyConfigs for Bundles of Perl modules.
-- [generateEasyConfig.R](#-generateEasyConfig): Helper script for making EasyConfigs for Bundles of R packages.
+- [hpc-environment-sync.bash](#-hpc-environment-syncbash): Synchronize deployed software, modules and reference data from primary to a secondary location.
+- [generateEasyConfig.R](#-generateeasyconfigr): Helper script for making EasyConfigs for Bundles of R packages.
+- [GetPerlModuleDepTreeFromCPAN.pl](#-getperlmodulepeptreefromdpanpl): Helper script for making EasyConfigs for Bundles of Perl modules.
 
-#### <a name="hpc-environment-sync"/> hpc-environment-sync.bash
+#### <a name="hpc-environment-syncbash"/> hpc-environment-sync.bash
 
 Use the ```hpc-environment-sync.cfg``` config file in the same location as the script to configure various defaults.
 
@@ -48,7 +48,7 @@ Details:
       The special NAME/VERSION combination ANY/ANY will sync all modules.
 ```
 
-#### <a name="generateEasyConfig"/> generateEasyConfig.R
+#### <a name="generateeasyconfigr"/> generateEasyConfig.R
 
 ```
 Description: 
@@ -77,7 +77,7 @@ Explanation of options:
                                One of FINEST, FINER, FINE, DEBUG, INFO (default), WARNING, ERROR or CRITICAL.
 ```
 
-#### <a name="GetPerlModuleDepTreeFromCPAN"/> GetPerlModuleDepTreeFromCPAN.pl
+#### <a name="getperlmodulepeptreefromdpanpl"/> GetPerlModuleDepTreeFromCPAN.pl
 
 ```
 Usage:
