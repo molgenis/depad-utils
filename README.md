@@ -18,7 +18,7 @@ Utilities for deploy admins.
 
 - [hpc-environment-sync.bash](#-hpc-environment-syncbash): Synchronize deployed software, modules and reference data from primary to a secondary location.
 - [generateEasyConfig.R](#-generateeasyconfigr): Helper script for making EasyConfigs for Bundles of R packages.
-- [GetPerlModuleDepTreeFromCPAN.pl](#-getperlmodulepeptreefromcpanpl): Helper script for making EasyConfigs for Bundles of Perl modules.
+- [GetPerlModuleDepTreeFromCPAN.pl](#-getperlmoduledeptreefromcpanpl): Helper script for making EasyConfigs for Bundles of Perl modules.
 
 #### <a name="hpc-environment-syncbash"/> hpc-environment-sync.bash
 
@@ -77,7 +77,7 @@ Explanation of options:
                                One of FINEST, FINER, FINE, DEBUG, INFO (default), WARNING, ERROR or CRITICAL.
 ```
 
-#### <a name="getperlmodulepeptreefromcpanpl"/> GetPerlModuleDepTreeFromCPAN.pl
+#### <a name="getperlmoduledeptreefromcpanpl"/> GetPerlModuleDepTreeFromCPAN.pl
 
 ```
 Usage:
