@@ -536,7 +536,7 @@ do
   echo "      This may fail (depending on current group and permissions) if user '${SYS_USER}' does not own the files/folders."
   #
   # We use find to try to fix group + perms only when they are not correct.
-  # This prevents permission denied errors when there is no need to change group or perms and we do not own the files/folders. 
+  # This prevents permission denied errors when there is no need to change group or perms and we do not own the files/folders.
   #
   find "${RSYNC_SOURCES[${i}]}" \! -group "${SYS_GROUP}"                                                                     -exec chgrp "${SYS_GROUP}" '{}' \;            2> ${TMP_LOG} || reportError ${LINENO} $?
   find "${RSYNC_SOURCES[${i}]}" \! -type d -a \! \( -perm ${SYS_FILE_PERMS_EXECUTABLE} -o -perm ${SYS_FILE_PERMS_REGULAR} \) -exec chmod "${SYS_FILE_PERMS_CHMOD}" '{}' \; 2> ${TMP_LOG} || reportError ${LINENO} $?
