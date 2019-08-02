@@ -26,9 +26,12 @@ repos$bioconductor$active = c('http://www.bioconductor.org/packages/release/bioc
 #  * This list is for R 3.6.x with foss 2018b.
 #  * When different versions of these dependencies are loaded in the environment with
 #        module load dependency/version
-#    before this script is executed this script will pickup the new versions from the environment
-#    overruling the defaults. Extra dependencies will not get automafically added though:
-#    You will need to add those here as well as in the functions that write the EasyConfig files.
+#    before this script is executed,
+#    then this script will pickup the new versions from the environment overruling the defaults.
+#    Extra dependencies will not get added automagically though:
+#    You will need to add those
+#      1. here as well as
+#      2. in the functions that write the EasyConfig files.
 #
 dependency_defaults <-list(
     'pkg-config'='0.29.2',
@@ -114,10 +117,11 @@ getDepModuleVersion <- function(dep.name, toolchain.name) {
         dep.version <- dependency_defaults[[dep.name]]
     } else {
         #
-        # Strip module name from the from and toolchain, toolchain version and optional version suffix from the end.
+        # Strip module name and a slash forward from the beginning of the string and
+        # toolchain, toolchain version and optional version suffix from the end.
         # E.g. for cairo the STDOUT of the module list --terse command is: "cairo/1.16.0-GCCcore-7.3.0"
         # but we want only the version number of cairo: 1.16.0
-        # Note also check for minimal toolchains like 'GCC' and 'GCCcore' commonly used for dependencies,
+        # Also check for minimal toolchains like 'GCC' and 'GCCcore' commonly used for dependencies,
         # when the toolchain used for R may be a more full featured one like 'foss'.
         #
         dep.version <- str_replace_all(dep.version , paste('^', dep.name, '/', sep=''), '')
