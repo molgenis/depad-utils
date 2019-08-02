@@ -1,6 +1,12 @@
 #!/usr/bin/env Rscript
 
 #
+# ToDo 1: Resolve (updated) verions of dependencies
+# ToDo 2: Inject checksums for source tarballs into EasyConfigs 
+#         for both R itself as well as for additional R packages.
+#
+
+#
 # Hard-coded list of R package repositories.
 #
 #  * Active URLs are used for checking if a package may have been retrieved from that repo.
@@ -14,6 +20,42 @@ repos$bioconductor$active = c('http://www.bioconductor.org/packages/release/bioc
     'http://www.bioconductor.org/packages/release/data/annotation/src/contrib/',
     'http://www.bioconductor.org/packages/release/data/experiment/src/contrib/',
     'http://www.bioconductor.org/packages/release/extra/src/contrib/')
+
+#
+# Default versions for dependecies.
+#  * This list is for R 3.6.x with foss 2018b.
+#  * When different versions of these dependencies are loaded in the environment with
+#        module load dependency/version
+#    before this script is executed,
+#    then this script will pickup the new versions from the environment overruling the defaults.
+#    Extra dependencies will not get added automagically though:
+#    You will need to add those
+#      1. here as well as
+#      2. in the functions that write the EasyConfig files.
+#
+dependency_defaults <-list(
+    'pkg-config'='0.29.2',
+    'libreadline'='8.0',
+    'ncurses'='6.1',
+    'bzip2'='1.0.6',
+    'XZ'='5.2.4',
+    'zlib'='1.2.11',
+    'SQLite'='3.29.0',
+    'PCRE'='8.43',
+    'Java'='11.0.2',
+    'cURL'='7.63.0',
+    'libxml2'='2.9.8',
+    'libpng'='1.6.37',
+    'libjpeg-turbo'='2.0.2',
+    'LibTIFF'='4.0.10',
+    'cairo'='1.16.0',
+    'Pango'='1.43.0',
+    'GMP'='6.1.2',
+    'UDUNITS'='2.2.27.6',
+    'ImageMagick'='7.0.8-56',
+    'MariaDB-connector-c'='3.1.2',
+    'NLopt'='2.6.1'
+)
 
 #
 ##
@@ -38,7 +80,9 @@ Description:
 Example usage:
     module load EasyBuild
     module load R
+    module load dependency/updated_version
     generateEasyConfig.R  --tc  foss/2018b \\
+                          --vs  19.07.1 \\
                           --od  /path/to/my/EasyConfigs/r/R/ \\
                           --ll  WARNING 
 
@@ -49,6 +93,11 @@ Explanation of options:
                                    eb --list-toolchains
                                To check if a toolchain is already installed and if yes which version is the default:
                                    module -r -t avail -d '^name_of_toolchain$'
+    --vs YY.MM.release      Version suffix for RPlus bundle with additional R packages (required).
+                               YY = year
+                               MM = month
+                               release = incremental release number of an RPlus bundle in a given YY.MM.
+                                         Hence this is not a day! First release in given year and month is always 1.
     --od path               Output Directory where the generated *.eb EasyConfig file will be stored (optional).
                                Will default to the current working directory as determined with getwd().
                                Name of the output file follows strict rules 
@@ -57,6 +106,28 @@ Explanation of options:
                                One of FINEST, FINER, FINE, DEBUG, INFO (default), WARNING, ERROR or CRITICAL.
 ")
     q()
+}
+
+getDepModuleVersion <- function(dep.name, toolchain.name) {
+    #
+    # Get version of a loaded dependency from module command.
+    #
+    dep.version <- system2('module', args = c('--terse', 'list', dep.name), stdout = TRUE)
+    if (is.na(dep.version) || length(dep.version) == 0) {
+        dep.version <- dependency_defaults[[dep.name]]
+    } else {
+        #
+        # Strip module name and a slash forward from the beginning of the string and
+        # toolchain, toolchain version and optional version suffix from the end.
+        # E.g. for cairo the STDOUT of the module list --terse command is: "cairo/1.16.0-GCCcore-7.3.0"
+        # but we want only the version number of cairo: 1.16.0
+        # Also check for minimal toolchains like 'GCC' and 'GCCcore' commonly used for dependencies,
+        # when the toolchain used for R may be a more full featured one like 'foss'.
+        #
+        dep.version <- str_replace_all(dep.version , paste('^', dep.name, '/', sep=''), '')
+        dep.version <- str_replace_all(dep.version , paste('-(', toolchain.name, '|GCC).*$', sep=''), '')
+    }
+    return(dep.version)
 }
 
 #
@@ -68,7 +139,7 @@ Explanation of options:
 # Arguments:
 #  * packages: A vector with package names (i.e. c('ggplot2', 'RMySQL', 'stringer'))
 #  * repos:    One or more repositories used by packageStatus() to retrieve information on available packages.
-
+#
 getPackageTree <- function(packages, repos) {
     
     #
@@ -203,80 +274,137 @@ getPackageTree <- function(packages, repos) {
     return(allPackages.df)
 }
 
-writeEC <- function (fh, version, packages, repos, toolchain.name, toolchain.version) {
-    
-    writeLines("
 #
-# This EasyBuild config file for R was generated with generateEasyConfig.R
+# Compile R bare EasyConfig and write to file.
 #
-", fh)
+writeECR <- function (fh, version, deps, packages, repos, toolchain.name, toolchain.version) {
+    writeLines("#", fh)
+    writeLines("# This EasyBuild config file for R 'bare' was generated with generateEasyConfig.R", fh)
+    writeLines("#", fh)
     writeLines("name = 'R'", fh)
     writeLines(paste("version = '", version, "'", sep=''), fh)
+    writeLines("versionsuffix = '-bare'", fh)
     writeLines("homepage = 'http://www.r-project.org/'", fh)
     writeLines('description = """R is a free software environment for statistical computing and graphics."""', fh)
     writeLines("moduleclass = 'lang'", fh)
-    this.line = paste("toolchain = {'name': '", toolchain.name, "', 'version': '", toolchain.version, "'}", sep='')
-    writeLines(this.line, fh)
-    writeLines("
-sources = [SOURCE_TAR_GZ]
-source_urls = ['http://cran.us.r-project.org/src/base/R-%(version_major)s']
+    writeLines(paste("toolchain = {'name': '", toolchain.name, "', 'version': '", toolchain.version, "'}", sep=''), fh)
+    writeLines("sources = [SOURCE_TAR_GZ]", fh)
+    writeLines("source_urls = ['http://cran.us.r-project.org/src/base/R-%(version_major)s']", fh)
+    writeLines("", fh)
+    writeLines("#", fh)
+    writeLines("# Specify that at least EasyBuild v3.5.0 is required,", fh)
+    writeLines("# since we rely on the updated easyblock for R to configure correctly w.r.t. BLAS/LAPACK.", fh)
+    writeLines("#", fh)
+    writeLines("easybuild_version = '3.5.0'", fh)
+    writeLines("", fh)
+    writeLines("builddependencies = [", fh)
+    writeLines(paste("    ('pkg-config', '",    deps[['pkg-config']],    "'),",           sep=''), fh)
+    writeLines("]", fh)
+    writeLines("", fh)
+    writeLines("dependencies = [", fh)
+    writeLines(paste("    ('libreadline', '",   deps[['libreadline']],   "'),",           sep=''), fh)
+    writeLines(paste("    ('ncurses', '",       deps[['ncurses']],       "'),",           sep=''), fh)
+    writeLines(paste("    ('bzip2', '",         deps[['bzip2']],         "'),",           sep=''), fh)
+    writeLines(paste("    ('XZ', '",            deps[['XZ']],            "'),",           sep=''), fh)
+    writeLines(paste("    ('zlib', '",          deps[['zlib']],          "'),",           sep=''), fh)
+    writeLines(paste("    ('SQLite', '",        deps[['SQLite']],        "'),",           sep=''), fh)
+    writeLines(paste("    ('PCRE', '",          deps[['PCRE']],          "'),",           sep=''), fh)
+    writeLines(paste("    ('Java', '",          deps[['Java']],          "', '', True),", sep=''), fh)
+    writeLines(paste("    ('cURL', '",          deps[['cURL']],          "'),",           sep=''), fh)
+    writeLines(paste("    ('libxml2', '",       deps[['libxml2']],       "'),",           sep=''), fh)
+    writeLines(paste("    ('libpng', '",        deps[['libpng']],        "'),",           sep=''), fh)
+    writeLines(paste("    ('libjpeg-turbo', '", deps[['libjpeg-turbo']], "'),",           sep=''), fh)
+    writeLines(paste("    ('LibTIFF', '",       deps[['LibTIFF']],       "'),",           sep=''), fh)
+    writeLines(paste("    ('cairo', '",         deps[['cairo']],         "'),",           sep=''), fh)
+    writeLines(paste("    ('Pango', '",         deps[['Pango']],         "'),",           sep=''), fh)
+    writeLines("    #", fh)
+    writeLines("    # Disabled TK, because the -no-X11 option does not work and still requires X11,", fh)
+    writeLines("    # which does not exist on headless compute nodes.", fh)
+    writeLines("    #", fh)
+    writeLines("    #('Tk', '8.6.9', '-no-X11'),", fh)
+    writeLines("    #", fh)
+    writeLines("    # OS dependency should be preferred if the os version is more recent then this version,", fh)
+    writeLines("    # it's nice to have an up to date openssl for security reasons.", fh)
+    writeLines("    #", fh)
+    writeLines("    #('OpenSSL', '1.0.2k'),", fh)
+    writeLines("]", fh)
+    writeLines("", fh)
+    writeLines("osdependencies = [('openssl-devel', 'libssl-dev', 'libopenssl-devel')]", fh)
+    writeLines("", fh)
+    writeLines("configopts = '--with-pic --enable-threads --enable-R-shlib'", fh)
+    writeLines("#", fh)
+    writeLines("# Bare R version. Additional packages go into RPlus.", fh)
+    writeLines("#", fh)
+    writeLines("configopts += ' --with-recommended-packages=no'", fh)
+    writeLines("#", fh)
+    writeLines("# Disable X11: prevent picking this up automagically:", fh)
+    writeLines("# it may be present on the build server, but don't rely on X11 related stuff being available on compute nodes!", fh)
+    writeLines("# Compiling with X11 support may result in an R that crashes on compute nodes.", fh)
+    writeLines("#", fh)
+    writeLines("configopts += ' --with-x=no --with-tcltk=no'", fh)
+    writeLines("", fh)
+    writeLines("#", fh)
+    writeLines("# R package list.", fh)
+    writeLines("# Only default a.k.a. base packages are listed here just for sanity checking.", fh)
+    writeLines("# Additional packages go into RPlus module.", fh)
+    writeLines("#", fh)
+    writeLines("exts_list = [", fh)
+    forget.this = lapply(unlist(subset(packages, Repo == 'base')$Package), function(pkg) {writeLines(sprintf("    '%s',", pkg), fh)})
+    writeLines("]",fh)
+    writeLines("", fh)
+}
 
 #
-# Configure options.
+# Compile RPlus EasyConfig and write to file.
 #
-# NOTE: LAPACK support is built into BLAS, which will be detected correctly when LAPACK_LIBS is *not* specified.
-#       The summary at the end of the configure output should contain:
-#           External libraries: ...., BLAS(OpenBLAS), LAPACK(in blas), ....
-#
-#preconfigopts = 'BLAS_LIBS=\"$LIBBLAS\" LAPACK_LIBS=\"$LIBLAPACK\"'
-preconfigopts = 'BLAS_LIBS=\"$LIBBLAS\"'
-configopts = '--with-lapack --with-blas --with-pic --enable-threads --with-x=no --enable-R-shlib'
-configopts += ' --with-tcl-config=$EBROOTTCL/lib/tclConfig.sh --with-tk-config=$EBROOTTK/lib/tkConfig.sh '
-
-#
-# Enable graphics capabilities for plotting.
-#
-configopts += ' --with-cairo --with-libpng --with-jpeglib --with-libtiff'
-#
-# Some recommended packages may fail in a parallel build (e.g. Matrix) and we're installing them anyway below.
-#
-configopts += ' --with-recommended-packages=no'
-
-#
-# You may need to include a more recent Python to download R packages from HTTPS based URLs
-# when the Python that comes with your OS is too old and you encounter:
-#     SSL routines:SSL23_GET_SERVER_HELLO:sslv3 alert handshake failure
-# In that case make sure to include a Python as builddependency. 
-# This Python should not be too new: it's dependencies like for example on ncursus should be compatible with R's dependencies.
-# For example Python 2.7.11 is too new as it requires ncurses 6.0 whereas our R requires ncurses 5.9.
-# The alternative is to replace the https URLs with http URLs in the generated EasyConfig.
-#
-#builddependencies = [
-#    ('Python', '2.7.10')
-#]
-
-dependencies = [
-    ('libreadline', '6.3'),
-    ('ncurses', '5.9'),
-    ('bzip2', '1.0.6'),
-    ('XZ', '5.2.2'),
-    ('libpng', '1.6.29'),            # For plotting in R; requires patched libpng.pc.in to add missing zlib dependency.
-    ('libjpeg-turbo', '1.4.2'),      # For plotting in R
-    ('LibTIFF', '4.0.4'),            # For plotting in R
-    ('Tcl', '8.6.4'),                # For Tcl/Tk
-    ('Tk', '8.6.4', '-no-X11'),      # For Tcl/Tk
-    ('cURL', '7.47.1'),              # For RCurl
-    ('libxml2', '2.9.2'),            # For XML
-    ('cairo', '1.14.10'),            # For plotting in R
-    ('Pango', '1.40.6'),             # For plotting in R.
-    ('Java', '1.8.0_45', '', True),  # Java bindings are built if Java is found, might as well provide it.
-    ('PCRE', '8.38'),                # For rphast package.
-    ('GMP', '6.1.1'),                # for igraph
-]
-
-package_name_tmpl = '%(name)s_%(version)s.tar.gz'
-", fh)
-    
+writeECRPlus <- function (fh, version, deps, packages, repos, toolchain.name, toolchain.version, rplus.versionsuffix) {
+    writeLines("#", fh)
+    writeLines("# This EasyBuild config file for RPlus was generated with generateEasyConfig.R", fh)
+    writeLines("#", fh)
+    writeLines("easyblock = 'Bundle'", fh)
+    writeLines("name = 'RPlus'", fh)
+    writeLines(paste("version = '", version, "'", sep=''), fh)
+    writeLines(paste("versionsuffix = '", rplus.versionsuffix, "'", sep=''), fh)
+    writeLines("homepage = 'http://www.r-project.org/'", fh)
+    writeLines('description = """R is a free software environment for statistical computing and graphics."""', fh)
+    writeLines("moduleclass = 'lang'", fh)
+    writeLines("modextrapaths = {'R_LIBS': ['library', '']}", fh)
+    writeLines(paste("toolchain = {'name': '", toolchain.name, "', 'version': '", toolchain.version, "'}", sep=''), fh)
+    writeLines("", fh)
+    writeLines("#", fh)
+    writeLines("# You may need to include a more recent Python to download R packages from HTTPS based URLs", fh)
+    writeLines("# when the Python that comes with your OS is too old and you encounter:", fh)
+    writeLines("#     SSL routines:SSL23_GET_SERVER_HELLO:sslv3 alert handshake failure", fh)
+    writeLines("# In that case make sure to include a Python as builddependency. ", fh)
+    writeLines("# This Python should not be too new either: it's dependencies like for example on ncursus should be compatible with R's dependencies.", fh)
+    writeLines("# The alternative is to replace the https URLs with http URLs in the generated EasyConfig.", fh)
+    writeLines("#", fh)
+    writeLines("#builddependencies = [", fh)
+    writeLines("#    ('Python', '3.7.4')", fh)
+    writeLines("#]", fh)
+    writeLines("", fh)
+    writeLines("dependencies = [", fh)
+    writeLines("    ('R', '%(version)s', '-bare'),", fh)
+    writeLines(paste("    ('GMP', '",                 deps[['GMP']],                 "'),", sep=''), fh)
+    writeLines(paste("    ('UDUNITS', '",             deps[['UDUNITS']],             "'),", sep=''), fh)
+    writeLines(paste("    ('ImageMagick', '",         deps[['ImageMagick']],         "'),", sep=''), fh)
+    writeLines(paste("    ('MariaDB-connector-c', '", deps[['MariaDB-connector-c']], "'),", sep=''), fh)
+    writeLines(paste("    ('NLopt', '",               deps[['NLopt']],               "'),", sep=''), fh)
+    writeLines("]", fh)
+    writeLines("", fh)
+    writeLines("#", fh)
+    writeLines("# The '.' is a silly workaround to check for whatever current dir as workaround", fh)
+    writeLines("# until an updated RPackage is available, which installs extension R packages in a library subdir.", fh)
+    writeLines("#", fh)
+    writeLines("sanity_check_paths = {", fh)
+    writeLines("    'files': [],", fh)
+    writeLines("    'dirs': [('library', '.')],", fh)
+    writeLines("}", fh)
+    writeLines("", fh)
+    writeLines("package_name_tmpl = '%(name)s_%(version)s.tar.gz'", fh)
+    writeLines("exts_defaultclass = 'RPackage'", fh)
+    writeLines("exts_filter = ('R -q --no-save', 'library(%(ext_name)s)')", fh)
+    writeLines("", fh)
     for (this.repo in names(repos)) {
         writeLines(paste(this.repo, '_options = {', sep=''), fh)
         writeLines("    'source_urls': [", fh)
@@ -291,37 +419,31 @@ package_name_tmpl = '%(name)s_%(version)s.tar.gz'
                     writeLines(sprintf("        '%s',", url), fh)
                 }
         )
-        writeLines("    ],
-    'source_tmpl': package_name_tmpl,
-}
-", fh)
+        writeLines("    ],", fh)
+        writeLines("    'source_tmpl': package_name_tmpl,", fh)
+        writeLines("}", fh)
     }
-    
-    writeLines("
-#
-# R package list.
-#   * Order of packages is important!
-#   * Packages should be specified with fixed versions!
-#
-exts_list = [
-    # 
-    # Default libraries; only here to sanity check their presence.
-    #", fh)
-    
+    writeLines("", fh)
+    writeLines("#", fh)
+    writeLines("# R package list.", fh)
+    writeLines("#   * Order of packages is important!", fh)
+    writeLines("#   * Packages should be specified with fixed versions!", fh)
+    writeLines("#", fh)
+    writeLines("exts_list = [", fh)
+    writeLines("    #", fh)
+    writeLines("    # Default libraries; only here to sanity check their presence.", fh)
+    writeLines("    #", fh)
     forget.this = lapply(unlist(subset(packages, Repo == 'base')$Package), function(pkg) {writeLines(sprintf("    '%s',", pkg), fh)})
-    
-    writeLines("    #
-    # Other packages.
-    #", fh)
-    
+    writeLines("    #", fh)
+    writeLines("    # Other packages.", fh)
+    writeLines("    #", fh)
     forget.this = apply(subset(packages, Repo != 'base', select=c('Package', 'Version', 'Repo')), 1,
             function(this.pkg) {
                 this.pkg <- as.list(this.pkg);
                 writeLines(sprintf("    ('%s', '%s', %s_options),", this.pkg$Package, this.pkg$Version, this.pkg$Repo), fh)
             }
     )
-    writeLines(']',fh)
-
+    writeLines("]",fh)
 }
 
 #
@@ -344,7 +466,7 @@ if(length(cargs)>0) {
     }
     names(args)[flags]=cargs[flags]
 }
-arglist = c("--od", "--tc", "--ll", NA)
+arglist = c('--od', '--tc', '--vs', '--ll', NA)
 
 #
 # Handle arguments required to setup logging first.
@@ -387,8 +509,9 @@ if(wrong.flags) {
 #
 # Process other arguments.
 #
-output.dir = args['--od']
-toolchain  = args['--tc']
+output.dir          = args['--od']
+toolchain           = args['--tc']
+rplus.versionsuffix = args['--vs'] # For RPlus.
 
 if (is.na(args['--od'])) {
     output.dir = getwd() # default
@@ -405,6 +528,18 @@ if (is.na(args['--tc'])) {
         usage()
     }
 }
+if (is.na(args['--vs'])) {
+    logging::levellog(loglevels[['FATAL']], 'Version suffix must be specified with --vs YY.MM.incremental_release_number.')
+    usage()
+} else {
+    if (grepl('[1-9][0-9].[0-1][0-9].[1-9][0-9]*', rplus.versionsuffix)) {
+        rplus.versionsuffix = paste('-v', rplus.versionsuffix, sep='')
+        logging::levellog(loglevels[['DEBUG']], paste('Will use RPlus version suffix: ', rplus.versionsuffix, '.', sep=''))
+    } else {
+        logging::levellog(loglevels[['FATAL']], 'Version suffix must be specified with --vs YY.MM.incremental_release_number.')
+        usage()
+    }
+}
 
 #
 # Get R version.
@@ -413,12 +548,20 @@ R.version <- version
 R.version.full = paste(get('major', R.version), get('minor', R.version), sep='.')
 
 #
-# Create a file handle.
+# Update versions of dependencies using "module list dependency" from commandline.
+#
+dependencies = setNames(lapply(names(dependency_defaults), getDepModuleVersion, toolchain.name=toolchain.name), names(dependency_defaults))
+
+#
+# Create file handles.
 #
 logging::levellog(loglevels[['DEBUG']], 'Compiling paths and filehandles for output files...')
-output.path = paste(output.dir, '/R-', R.version.full, '-', toolchain.name, '-', toolchain.version, '.eb', sep='')
-logging::levellog(loglevels[['INFO']], paste('Will store EasyConfig in', output.path))
-fh = file(output.path, 'w')
+output.path.r     = paste(output.dir, '/R-',     R.version.full, '-', toolchain.name, '-', toolchain.version, '-bare',             '.eb', sep='')
+output.path.rplus = paste(output.dir, '/RPlus-', R.version.full, '-', toolchain.name, '-', toolchain.version, rplus.versionsuffix, '.eb', sep='')
+logging::levellog(loglevels[['INFO']], paste('Will store R     EasyConfig in', output.path.r))
+logging::levellog(loglevels[['INFO']], paste('Will store RPlus EasyConfig in', output.path.rplus))
+fh.r = file(output.path.r, 'w')
+fh.rplus = file(output.path.rplus, 'w')
 
 #
 # Get list all installed packages (in alphabetic order).
@@ -429,8 +572,14 @@ installedPackages <- rownames(installed.packages(lib.loc = NULL, priority = NULL
 # Supplement list of BioConductor repository URLs, which already contains the 'release' URLs, 
 # with the repo URLs for the specific BioConductor version that is compatible with this version of R.
 #
-source("http://bioconductor.org/biocLite.R")
-biocRepos <- biocinstallRepos()
+if (compareVersion(paste(get('major', R.version), get('minor', R.version), sep='.'), '3.5')) {
+    if (!requireNamespace("BiocManager", quietly = TRUE)) {install.packages("BiocManager")}
+    library('BiocManager')
+    biocRepos <- repositories()
+} else {
+    source("http://bioconductor.org/biocLite.R")
+    biocRepos <- biocinstallRepos()
+}
 biocVersionedRepos <- subset(biocRepos, grepl('bioconductor', biocRepos))
 biocVersionedRepoURLs <- paste(biocVersionedRepos, '/src/contrib/', sep='')
 repos$bioconductor$active <- append(repos$bioconductor$active, biocVersionedRepoURLs)
@@ -478,12 +627,14 @@ logging::levellog(loglevels[['INFO']], paste('==================================
 #
 # Create EasyBuild EasyConfig
 #
-writeEC(fh, R.version.full, installedPackages, repos, toolchain.name, toolchain.version)
+writeECR(fh.r,         R.version.full, dependencies, installedPackages, repos, toolchain.name, toolchain.version)
+writeECRPlus(fh.rplus, R.version.full, dependencies, installedPackages, repos, toolchain.name, toolchain.version, rplus.versionsuffix)
 
 #
 # Close file handle.
 #
-close(fh)
+close(fh.r)
+close(fh.rplus)
 
 #
 # We are done!
