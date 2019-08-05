@@ -640,6 +640,6 @@ logging::levellog(loglevels[['INFO']], paste('==================================
 #
 logging::levellog(loglevels[['INFO']], 'Run the EasyBuild "eb" command like this to insert checksums for the sources into the generated EasyConfigs:')
 logging::levellog(loglevels[['INFO']], ':    module load EasyBuild')
-logging::levellog(loglevels[['INFO']], paste(':    eb --inject-checksums ', output.path.r, sep=''))
-logging::levellog(loglevels[['INFO']], paste(':    eb --inject-checksums ', output.path.rplus, sep=''))
+logging::levellog(loglevels[['INFO']], paste(':    eb --inject-checksums=sha256 --stop=ready ', output.path.r, sep=''))
+logging::levellog(loglevels[['INFO']], paste(':    eb --inject-checksums=sha256 --stop=ready ', output.path.rplus, sep=''))
 logging::levellog(loglevels[['INFO']], paste('=======================================================================', paste(rep('=', numberwidth), collapse=''), sep=''))
