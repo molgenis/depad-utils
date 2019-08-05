@@ -430,13 +430,6 @@ writeECRPlus <- function (fh, version, deps, packages, repos, toolchain.name, to
     writeLines("#   * Packages should be specified with fixed versions!", fh)
     writeLines("#", fh)
     writeLines("exts_list = [", fh)
-    writeLines("    #", fh)
-    writeLines("    # Default libraries; only here to sanity check their presence.", fh)
-    writeLines("    #", fh)
-    forget.this = lapply(unlist(subset(packages, Repo == 'base')$Package), function(pkg) {writeLines(sprintf("    '%s',", pkg), fh)})
-    writeLines("    #", fh)
-    writeLines("    # Other packages.", fh)
-    writeLines("    #", fh)
     forget.this = apply(subset(packages, Repo != 'base', select=c('Package', 'Version', 'Repo')), 1,
             function(this.pkg) {
                 this.pkg <- as.list(this.pkg);
@@ -640,4 +633,13 @@ close(fh.rplus)
 # We are done!
 #
 logging::levellog(loglevels[['INFO']], 'Finished!')
+logging::levellog(loglevels[['INFO']], paste('=======================================================================', paste(rep('=', numberwidth), collapse=''), sep=''))
 
+#
+# Inform user how to insert checksums.
+#
+logging::levellog(loglevels[['INFO']], 'Run the EasyBuild "eb" command like this to insert checksums for the sources into the generated EasyConfigs:')
+logging::levellog(loglevels[['INFO']], ':    module load EasyBuild')
+logging::levellog(loglevels[['INFO']], paste(':    eb --inject-checksums ', output.path.r, sep=''))
+logging::levellog(loglevels[['INFO']], paste(':    eb --inject-checksums ', output.path.rplus, sep=''))
+logging::levellog(loglevels[['INFO']], paste('=======================================================================', paste(rep('=', numberwidth), collapse=''), sep=''))
