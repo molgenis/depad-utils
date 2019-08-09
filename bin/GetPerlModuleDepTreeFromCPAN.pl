@@ -113,7 +113,7 @@ if ($output_format eq 'list') {
 		my $archive;
 		my $author;
 		my $version;
-		if ($distro =~ m|(.+)/(([^/]+)-(v?[0-9.]+).tar.gz)$|) {
+		if ($distro =~ m|(.+)/(([^/]+)-(v?[0-9.]+).t(ar.)?gz)$|) {
 			$author  = $1;
 			$archive = $2;
 			$version = $4;
