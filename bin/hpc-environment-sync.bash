@@ -377,9 +377,9 @@ if [ ${ALL} -eq 1 ]; then
   # 
   # Note: basically this includes everything except for the sources, which we don't need on cluster nodes.
   #
-  RSYNC_SOURCES+=(${SOFTWARE_DIR_NAME})
-  RSYNC_SOURCES+=(${MODULES_DIR_NAME})
-  RSYNC_SOURCES+=(${REFDATA_DIR_NAME})
+  RSYNC_SOURCES+=("${SOFTWARE_DIR_NAME}")
+  RSYNC_SOURCES+=("${MODULES_DIR_NAME}")
+  RSYNC_SOURCES+=("${REFDATA_DIR_NAME}")
 elif [ ${REFDATA} -eq 1 ]; then
   #
   # Remove leading ${SOURCE_ROOT_PATH}/data/ from SOURCE if an absolute path was specified.
@@ -412,8 +412,8 @@ elif [ ${MODULE} -eq 1 ]; then
     #
     # Add all applications and their modules to the list of data to rsync.
     #
-    RSYNC_SOURCES+=(${SOFTWARE_DIR_NAME})
-    RSYNC_SOURCES+=(${MODULES_DIR_NAME})
+    RSYNC_SOURCES+=("${SOFTWARE_DIR_NAME}")
+    RSYNC_SOURCES+=("${MODULES_DIR_NAME}")
   else
     #
     # Find module: Lmod modules may be present in multiple "category" sub dirs. 
@@ -442,15 +442,22 @@ elif [ ${MODULE} -eq 1 ]; then
       #
       for VERSIONED_MODULE in ${VERSIONED_MODULES[@]}; do
         RSYNC_SOURCES+=("${MODULES_DIR_NAME}/${VERSIONED_MODULE}")
-        echo "DEBUG: Appended ${MODULES_DIR_NAME}/${VERSIONED_MODULE} to RSYNC_SOURCES."
+        #echo "DEBUG: Appended ${MODULES_DIR_NAME}/${VERSIONED_MODULE} to RSYNC_SOURCES."
       done
       RSYNC_SOURCES+=("${SOFTWARE_DIR_NAME}/${MODULE_NAME}/${MODULE_VERSION}")
-      echo "DEBUG: Appended ${SOFTWARE_DIR_NAME}/${MODULE_NAME}/${MODULE_VERSION} to RSYNC_SOURCES."
+      #echo "DEBUG: Appended ${SOFTWARE_DIR_NAME}/${MODULE_NAME}/${MODULE_VERSION} to RSYNC_SOURCES."
     else
       reportError ${LINENO} '1' "Cannot find software dir ${MODULE_NAME}/${MODULE_VERSION} in ${SOURCE_ROOT_PATH}/${SOFTWARE_DIR_NAME}/."
     fi
   fi
-fi 
+  #
+  # Add the (updated) Lmod cache + timestamp as well.
+  #
+  RSYNC_SOURCES+=("${LMOD_CACHE_DIR/#${SOURCE_ROOT_PATH}/}")
+  RSYNC_SOURCES+=("${LMOD_TIMESTAMP_FILE/#${SOURCE_ROOT_PATH}/}")
+  #echo "DEBUG: Appended ${LMOD_CACHE_DIR/#${SOURCE_ROOT_PATH}/} to RSYNC_SOURCES."
+  #echo "DEBUG: Appended ${LMOD_TIMESTAMP_FILE/#${SOURCE_ROOT_PATH}/} to RSYNC_SOURCES."
+fi
 
 echo "INFO: RSYNC_SOURCES contains ${RSYNC_SOURCES[@]}"
 
@@ -502,17 +509,13 @@ fi
 # Update Lmod cache.
 #
 UPDATE_LMOD_CACHE=$(which update_lmod_system_cache_files 2> /dev/null || echo 'missing')
-
-if [ "${LMOD_VERSION%%.*}" -gt 6 ]
-then
-        lmod_modulepath=${MODULEPATH}
-        echo "INFO: found an lmod version higher than 6 (${LMOD_VERSION}), modulepath will be MODULEPATH"
+if [ "${LMOD_VERSION%%.*}" -gt 6 ]; then
+  lmod_modulepath="${MODULEPATH}"
+  printf '%s%s%s\n' 'INFO: found lmod version > 6.x (' ${LMOD_VERSION} '); will use $MODULEPATH.'
 else
-        lmod_modulepath=${LMOD_DEFAULT_MODULEPATH}
-        echo "INFO: found an lmod version of 6 or lower (${LMOD_VERSION}), modulepath will be LMOD_DEFAULT_MODULEPATH"
-
+  lmod_modulepath="${LMOD_DEFAULT_MODULEPATH}"
+  printf '%s%s%s\n' 'INFO: found lmod version <= 6.x (' ${LMOD_VERSION} '); will use $LMOD_DEFAULT_MODULEPATH.'
 fi
-
 if [ -x ${UPDATE_LMOD_CACHE} ]; then
   echo -n 'INFO: Updating Lmod cache... '
   ${UPDATE_LMOD_CACHE} -d ${LMOD_CACHE_DIR} \
