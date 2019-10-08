@@ -562,8 +562,9 @@ fh.rplus = file(output.path.rplus, 'w')
 installedPackages <- rownames(installed.packages(lib.loc = NULL, priority = NULL, noCache = TRUE))
 
 #
-# Supplement list of BioConductor repository URLs, which already contains the 'release' URLs, 
-# with the repo URLs for the specific BioConductor version that is compatible with this version of R.
+# Supplement list of BioConductor repository URLs, which already contains the 'release' URLs, with
+#  * the repo URLs for the specific BioConductor version that is compatible with this version of R and
+#  * the archive repo URLs for the specific BioConductor version that is compatible with this version of R.
 #
 if (compareVersion(paste(get('major', R.version), get('minor', R.version), sep='.'), '3.5')) {
     if (!requireNamespace("BiocManager", quietly = TRUE)) {install.packages("BiocManager")}
@@ -576,6 +577,7 @@ if (compareVersion(paste(get('major', R.version), get('minor', R.version), sep='
 biocVersionedRepos <- subset(biocRepos, grepl('bioconductor', biocRepos))
 biocVersionedRepoURLs <- paste(biocVersionedRepos, '/src/contrib/', sep='')
 repos$bioconductor$active <- append(repos$bioconductor$active, biocVersionedRepoURLs)
+repos$bioconductor$archive <- paste(biocVersionedRepos, '/src/contrib/Archive/%(name)s/', sep='')
 
 #
 # Supplement list of all installed versioned packages with
