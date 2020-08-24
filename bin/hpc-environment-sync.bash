@@ -559,7 +559,7 @@ do
   # Check for presence of folders for logical file system (LFS) names
   # and if present whether they contain a copy of ${SOURCE_ROOT_PATH}.
   #
-  declare -a LFS_MOUNT_POINTS="$(find ${DESTINATION_MOUNT_POINT_PARENTS[${i}]} -mindepth 1 -maxdepth 1 -type d)"
+  readarray -t LFS_MOUNT_POINTS < <(find ${DESTINATION_MOUNT_POINT_PARENTS[${i}]} -mindepth 1 -maxdepth 1 -type d)
   for (( j = 0 ; j < ${#LFS_MOUNT_POINTS[@]:-0} ; j++ ))
   do
     DESTINATION_ROOT_DIR="${LFS_MOUNT_POINTS[${j}]}${SOURCE_ROOT_PATH}"
