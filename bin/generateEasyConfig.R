@@ -23,38 +23,71 @@ repos$bioconductor$active = c('http://www.bioconductor.org/packages/release/bioc
 
 #
 # Default versions for dependecies.
-#  * This list is for R 3.6.x with foss 2018b.
-#  * When different versions of these dependencies are loaded in the environment with
+#
+# When different versions of these dependencies are loaded in the environment with
 #        module load dependency/version
-#    before this script is executed,
-#    then this script will pickup the new versions from the environment overruling the defaults.
-#    Extra dependencies will not get added automagically though:
+# before this script is executed,
+# then this script will pickup the new versions from the environment overruling the defaults.
+# Extra dependencies will not get added automagically though:
 #    You will need to add those
 #      1. here as well as
 #      2. in the functions that write the EasyConfig files.
 #
+# This list is for R 3.6.x with foss 2018b:
+#
+#dependency_defaults <-list(
+#    'pkg-config'='0.29.2',
+#    'libreadline'='8.0',
+#    'ncurses'='6.1',
+#    'bzip2'='1.0.6',
+#    'XZ'='5.2.4',
+#    'zlib'='1.2.11',
+#    'SQLite'='3.29.0',
+#    'PCRE'='8.43',
+#    'Java'='11.0.2',
+#    'cURL'='7.63.0',
+#    'libxml2'='2.9.8',
+#    'libpng'='1.6.37',
+#    'libjpeg-turbo'='2.0.2',
+#    'LibTIFF'='4.0.10',
+#    'cairo'='1.16.0',
+#    'Pango'='1.43.0',
+#    'GMP'='6.1.2',
+#    'UDUNITS'='2.2.27.6',
+#    'ImageMagick'='7.0.8-56',
+#    'MariaDB-connector-c'='3.1.2',
+#    'NLopt'='2.6.1'
+#)
+#
+# This list is for R 4.0.x with foss 2018b:
+#
 dependency_defaults <-list(
     'pkg-config'='0.29.2',
     'libreadline'='8.0',
-    'ncurses'='6.1',
-    'bzip2'='1.0.6',
-    'XZ'='5.2.4',
+    'ncurses'='6.2',
+    'bzip2'='1.0.8',
+    'XZ'='5.2.5',
     'zlib'='1.2.11',
-    'SQLite'='3.29.0',
-    'PCRE'='8.43',
-    'Java'='11.0.2',
-    'cURL'='7.63.0',
-    'libxml2'='2.9.8',
+    'SQLite'='3.34.0',
+    'PCRE2'='10.36',
+    'Java'='11-LTS',
+    'cURL'='7.74.0',
+    'libxml2'='2.9.10',
     'libpng'='1.6.37',
-    'libjpeg-turbo'='2.0.2',
-    'LibTIFF'='4.0.10',
-    'cairo'='1.16.0',
-    'Pango'='1.43.0',
-    'GMP'='6.1.2',
-    'UDUNITS'='2.2.27.6',
-    'ImageMagick'='7.0.8-56',
-    'MariaDB-connector-c'='3.1.2',
-    'NLopt'='2.6.1'
+    'libjpeg-turbo'='2.0.6',
+    'LibTIFF'='4.2.0',
+    'cairo'='1.16.0-2',
+    'Pango'='1.48.0',
+    'OpenSSL'='1.1.1i',
+    'GMP'='6.2.1',
+    'UDUNITS'='2.2.28',
+    'ImageMagick'='7.0.10-59',
+    'MariaDB-connector-c'='3.1.11',
+    'NLopt'='2.7.0',
+    'HDF5'='1.10.7',
+    'nodejs'='14.15.4',
+    'unixODBC'='2.3.9',
+    'librsvg'='2.50.2'
 )
 
 #
@@ -77,6 +110,10 @@ Description:
     Generates an EasyBuild EasyConfig file from an existing R environment.
     Optionally you can first load a specific version of R using module load before generating the *.eb EasyConfig
 
+WARNING: This script cannot parse version suffixes for dependencies.
+If you need a dependency for R, that not only has a version (number),
+but also a version suffix, you must patch that manually in the generated EasyConfigs.
+
 Example usage:
     module load EasyBuild
     module load R
@@ -98,10 +135,10 @@ Explanation of options:
                                MM = month
                                release = incremental release number of an RPlus bundle in a given YY.MM.
                                          Hence this is not a day! First release in given year and month is always 1.
-    --od path               Output Directory where the generated *.eb EasyConfig file will be stored (optional).
+    --od path               Output Directory where the generated *.eb EasyConfigs file will be stored (optional).
                                Will default to the current working directory as determined with getwd().
-                               Name of the output file follows strict rules 
-                               and is automatically generated based on R version and toolchain.
+                               Names of the output files follow strict rules 
+                               and are automatically generated based on R version and toolchain.
     --ll LEVEL              Log level (optional).
                                One of FINEST, FINER, FINE, DEBUG, INFO (default), WARNING, ERROR or CRITICAL.
 ")
@@ -288,8 +325,8 @@ writeECR <- function (fh, version, deps, packages, repos, toolchain.name, toolch
     writeLines('description = """R is a free software environment for statistical computing and graphics."""', fh)
     writeLines("moduleclass = 'lang'", fh)
     writeLines(paste("toolchain = {'name': '", toolchain.name, "', 'version': '", toolchain.version, "'}", sep=''), fh)
-    writeLines("sources = [SOURCE_TAR_GZ]", fh)
     writeLines("source_urls = ['http://cran.us.r-project.org/src/base/R-%(version_major)s']", fh)
+    writeLines("sources = [SOURCE_TAR_GZ]", fh)
     writeLines("", fh)
     writeLines("#", fh)
     writeLines("# Specify that at least EasyBuild v3.5.0 is required,", fh)
@@ -308,7 +345,7 @@ writeECR <- function (fh, version, deps, packages, repos, toolchain.name, toolch
     writeLines(paste("    ('XZ', '",            deps[['XZ']],            "'),",           sep=''), fh)
     writeLines(paste("    ('zlib', '",          deps[['zlib']],          "'),",           sep=''), fh)
     writeLines(paste("    ('SQLite', '",        deps[['SQLite']],        "'),",           sep=''), fh)
-    writeLines(paste("    ('PCRE', '",          deps[['PCRE']],          "'),",           sep=''), fh)
+    writeLines(paste("    ('PCRE2', '",         deps[['PCRE2']],         "'),",           sep=''), fh)
     writeLines(paste("    ('Java', '",          deps[['Java']],          "', '', True),", sep=''), fh)
     writeLines(paste("    ('cURL', '",          deps[['cURL']],          "'),",           sep=''), fh)
     writeLines(paste("    ('libxml2', '",       deps[['libxml2']],       "'),",           sep=''), fh)
@@ -321,15 +358,15 @@ writeECR <- function (fh, version, deps, packages, repos, toolchain.name, toolch
     writeLines("    # Disabled TK, because the -no-X11 option does not work and still requires X11,", fh)
     writeLines("    # which does not exist on headless compute nodes.", fh)
     writeLines("    #", fh)
-    writeLines("    #('Tk', '8.6.9', '-no-X11'),", fh)
+    writeLines("    #('Tk', '8.6.11', '-no-X11'),", fh)
     writeLines("    #", fh)
     writeLines("    # OS dependency should be preferred if the os version is more recent then this version,", fh)
     writeLines("    # it's nice to have an up to date openssl for security reasons.", fh)
     writeLines("    #", fh)
-    writeLines("    #('OpenSSL', '1.0.2k'),", fh)
+    writeLines(paste("    ('OpenSSL', '",       deps[['OpenSSL']],         "'),",           sep=''), fh)
     writeLines("]", fh)
     writeLines("", fh)
-    writeLines("osdependencies = [('openssl-devel', 'libssl-dev', 'libopenssl-devel')]", fh)
+    writeLines("#osdependencies = [OS_PKG_OPENSSL_DEV]", fh)
     writeLines("", fh)
     writeLines("configopts = '--with-pic --enable-threads --enable-R-shlib'", fh)
     writeLines("#", fh)
@@ -343,6 +380,11 @@ writeECR <- function (fh, version, deps, packages, repos, toolchain.name, toolch
     writeLines("#", fh)
     writeLines("configopts += ' --with-x=no --with-tcltk=no'", fh)
     writeLines("", fh)
+    writeLines("#", fh)
+    writeLines("# Dynamic patch to remove unnecessary dependency on X11 when using Cairo.", fh)
+    writeLines("# Makes the configure flag combination \"--with-x=no --with-cairo\" work.", fh)
+    writeLines("#", fh)
+    writeLines("configure_cmd_prefix = \"perl -pi -e 's/cairo-xlib.h/cairo.h/' configure m4/cairo.m4 && \"", fh)
     writeLines("#", fh)
     writeLines("# R package list.", fh)
     writeLines("# Only default a.k.a. base packages are listed here just for sanity checking.", fh)
@@ -379,9 +421,9 @@ writeECRPlus <- function (fh, version, deps, packages, repos, toolchain.name, to
     writeLines("# This Python should not be too new either: it's dependencies like for example on ncursus should be compatible with R's dependencies.", fh)
     writeLines("# The alternative is to replace the https URLs with http URLs in the generated EasyConfig.", fh)
     writeLines("#", fh)
-    writeLines("#builddependencies = [", fh)
-    writeLines("#    ('Python', '3.7.4')", fh)
-    writeLines("#]", fh)
+    writeLines("builddependencies = [", fh)
+    writeLines("    ('Python', '3.9.1', '-bare')", fh)
+    writeLines("]", fh)
     writeLines("", fh)
     writeLines("dependencies = [", fh)
     writeLines("    ('R', '%(version)s', '-bare'),", fh)
@@ -390,6 +432,10 @@ writeECRPlus <- function (fh, version, deps, packages, repos, toolchain.name, to
     writeLines(paste("    ('ImageMagick', '",         deps[['ImageMagick']],         "'),", sep=''), fh)
     writeLines(paste("    ('MariaDB-connector-c', '", deps[['MariaDB-connector-c']], "'),", sep=''), fh)
     writeLines(paste("    ('NLopt', '",               deps[['NLopt']],               "'),", sep=''), fh)
+    writeLines(paste("    ('HDF5', '",                deps[['HDF5']],                "'),", sep=''), fh)
+    writeLines(paste("    ('nodejs', '",              deps[['nodejs']],              "'),", sep=''), fh)
+    writeLines(paste("    ('unixODBC', '",            deps[['unixODBC']],            "'),", sep=''), fh)
+    writeLines(paste("    ('librsvg', '",             deps[['librsvg']],             "'),", sep=''), fh)
     writeLines("]", fh)
     writeLines("", fh)
     writeLines("#", fh)
@@ -401,12 +447,12 @@ writeECRPlus <- function (fh, version, deps, packages, repos, toolchain.name, to
     writeLines("    'dirs': [('library', '.')],", fh)
     writeLines("}", fh)
     writeLines("", fh)
-    writeLines("package_name_tmpl = '%(name)s_%(version)s.tar.gz'", fh)
+    writeLines("local_package_name_tmpl = '%(name)s_%(version)s.tar.gz'", fh)
     writeLines("exts_defaultclass = 'RPackage'", fh)
     writeLines("exts_filter = ('R -q --no-save', 'library(%(ext_name)s)')", fh)
     writeLines("", fh)
     for (this.repo in names(repos)) {
-        writeLines(paste(this.repo, '_options = {', sep=''), fh)
+        writeLines(paste('local_', this.repo, '_options = {', sep=''), fh)
         writeLines("    'source_urls': [", fh)
         forget.this = lapply(unlist(repos[this.repo]), 
                 function(url) {
@@ -420,7 +466,7 @@ writeECRPlus <- function (fh, version, deps, packages, repos, toolchain.name, to
                 }
         )
         writeLines("    ],", fh)
-        writeLines("    'source_tmpl': package_name_tmpl,", fh)
+        writeLines("    'source_tmpl': local_package_name_tmpl,", fh)
         writeLines("}", fh)
     }
     writeLines("", fh)
@@ -433,7 +479,7 @@ writeECRPlus <- function (fh, version, deps, packages, repos, toolchain.name, to
     forget.this = apply(subset(packages, Repo != 'base', select=c('Package', 'Version', 'Repo')), 1,
             function(this.pkg) {
                 this.pkg <- as.list(this.pkg);
-                writeLines(sprintf("    ('%s', '%s', %s_options),", this.pkg$Package, this.pkg$Version, this.pkg$Repo), fh)
+                writeLines(sprintf("    ('%s', '%s', local_%s_options),", this.pkg$Package, this.pkg$Version, this.pkg$Repo), fh)
             }
     )
     writeLines("]",fh)
@@ -642,6 +688,13 @@ logging::levellog(loglevels[['INFO']], paste('==================================
 #
 logging::levellog(loglevels[['INFO']], 'Run the EasyBuild "eb" command like this to insert checksums for the sources into the generated EasyConfigs:')
 logging::levellog(loglevels[['INFO']], ':    module load EasyBuild')
+logging::levellog(loglevels[['INFO']], ':    #')
+logging::levellog(loglevels[['INFO']], ':    # IMPORTANT: About Python dependency:')
+logging::levellog(loglevels[['INFO']], ':    # If the default version of Python in your environment is (too) old,')
+logging::levellog(loglevels[['INFO']], ':    # EasyBuild (and any other Python code) may fail to download data from HTTPS URLs.')
+logging::levellog(loglevels[['INFO']], ':    # In that case you must load a newer Python 3.x.')
+logging::levellog(loglevels[['INFO']], ':    #')
+logging::levellog(loglevels[['INFO']], ':    module load Python')
 logging::levellog(loglevels[['INFO']], paste(':    eb --inject-checksums=sha256 --stop=ready ', output.path.r, sep=''))
 logging::levellog(loglevels[['INFO']], paste(':    eb --inject-checksums=sha256 --stop=ready ', output.path.rplus, sep=''))
 logging::levellog(loglevels[['INFO']], paste('=======================================================================', paste(rep('=', numberwidth), collapse=''), sep=''))
