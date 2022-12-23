@@ -65,6 +65,7 @@ dependency_defaults <-list(
     'pkgconf'='1.8.0',
     'Xvfb'='21.1.3',
     'Autotools'='20220317',
+    'R'='4.2.1-bare',
     'X11'='20220504',
     'Mesa'='22.0.3',
     'libGLU'='9.0.2',
