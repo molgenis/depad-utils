@@ -88,4 +88,4 @@ then
 	#
 	export SHELLCHECK_OPTS="${SHELLCHECK_OPTS} -e SC2312"
 fi
-shellcheck -a -x -o all -f "${format}" "${MYDIR}"/../bin/*.sh | sed "s|${MYDIR}/../||g"
+shellcheck -a -x -o all -f "${format}" "${MYDIR}"/../bin/*.*sh | sed "s|${MYDIR}/../||g"
