@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Script for syncing software and reference data sets 
+# Script for syncing software and reference data sets
 #   from primary install/deploy location (${SOURCE_ROOT_PATH})    (/apps/...     in file system layout below)
 #   to tmp file systems (${DESTINATION_MOUNT_POINT_PARENTS[@]})   (/.envsync/... in file system layout below)
 # in the UMCG cluster environment.
@@ -549,11 +549,11 @@ done
 
 #
 # Check if all destinations are available and remove destinations, which are offline!
-# 
+#
 # This is critically essential as syncing to a mount point with missing mount would add the data to the disk containing the mount point, 
 # which is usually a relatively small disk containing the OS. Running out of space on the local system disk, will crash a server!
 #
-declare -a AVAILABLE_DESTINATION_ROOT_DIRS
+declare -a AVAILABLE_DESTINATION_ROOT_DIRS=()
 for (( i = 0 ; i < "${#DESTINATION_MOUNT_POINT_PARENTS[@]}" ; i++ ))
 do 
 	#
