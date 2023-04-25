@@ -102,22 +102,22 @@ function reportError() {
 	#
 	# Notify syslog.
 	#
-	logger -s "$(hostname) - ${SCRIPT_NAME}:${PROBLEMATIC_LINE}: FATAL: rsync of ${SOURCE} to ${DESTINATION} by ${ROLE_USER}(${REAL_USER}) FAILED!"
-	logger -s "$(hostname) - ${SCRIPT_NAME}:${PROBLEMATIC_LINE}: Exit code = ${exit_status}"
-	logger -s "$(hostname) - ${SCRIPT_NAME}:${PROBLEMATIC_LINE}: Error message = ${errorMessage}"
-	logger -s "$(hostname) - ${SCRIPT_NAME}:${PROBLEMATIC_LINE}: Details = ${DETAILED_LOGS:-none.}"
+	logger -s "${HOSTNAME} - ${SCRIPT_NAME}:${PROBLEMATIC_LINE}: FATAL: rsync of ${SOURCE} to ${DESTINATION} by ${ROLE_USER}(${REAL_USER}) FAILED!"
+	logger -s "${HOSTNAME} - ${SCRIPT_NAME}:${PROBLEMATIC_LINE}: Exit code = ${exit_status}"
+	logger -s "${HOSTNAME} - ${SCRIPT_NAME}:${PROBLEMATIC_LINE}: Error message = ${errorMessage}"
+	logger -s "${HOSTNAME} - ${SCRIPT_NAME}:${PROBLEMATIC_LINE}: Details = ${DETAILED_LOGS:-none.}"
 	#
 	# Notify admins by e-mail only if this is an automated (cron) sync job (running in "DUMB" pseudo terminal).
 	#
-	if [ "${TERM}" == 'dumb' ]; then
+	if [[ "${TERM}" == 'dumb' ]]; then
 		echo "
 Dear ${SYS_GROUP} group,
 
-It is I, the ${SCRIPT_NAME} script executing on $(hostname) by ${ROLE_USER} (${REAL_USER}).
+It is I, the ${SCRIPT_NAME} script executing on ${HOSTNAME} by ${ROLE_USER} (${REAL_USER}).
 I gave up at line ${PROBLEMATIC_LINE} and your rsync of ${SOURCE} to ${DESTINATION} FAILED miserably!
 The exit code of the last command was ${exit_status} with error message ${errorMessage}.
 Further details follow below if available...
-Please fix either me, $(hostname) or ${ROLE_USER} (${REAL_USER}), whichever is broken...
+Please fix either me, ${HOSTNAME} or ${ROLE_USER} (${REAL_USER}), whichever is broken...
 
 Morituri te salutant!
 
@@ -127,7 +127,7 @@ ${DETAILED_LOGS:-}
 		| mail -s "rsync of ${SOURCE} to ${DESTINATION} FAILED!" \
 			-r "${EMAIL_FROM}" \
 			"${EMAIL_TO}" \
-		|| logger -s "$(hostname) - ${SCRIPT_NAME}:${LINENO}: FATAL: Could not send email."
+		|| logger -s "${HOSTNAME} - ${SCRIPT_NAME}:${LINENO}: FATAL: Could not send email."
 	fi
 	#
 	# Clean up.
@@ -145,14 +145,14 @@ ${DETAILED_LOGS:-}
 #
 function performSync() {
 	cd "${SOURCE_ROOT_PATH}"
-	for (( i = 0 ; i < "${#RSYNC_SOURCES[@]:-0}" ; i++ ))
+	for (( i = 0 ; i < "${#RSYNC_SOURCES[@]}" ; i++ ))
 	do
-		for (( j = 0 ; j < "${#AVAILABLE_DESTINATION_ROOT_DIRS[@]:-0}" ; j++ ))
+		for (( j = 0 ; j < "${#AVAILABLE_DESTINATION_ROOT_DIRS[@]}" ; j++ ))
 		do
 			RSYNC_SOURCE="${RSYNC_SOURCES[${i}]}"
 			RSYNC_DESTINATION="${AVAILABLE_DESTINATION_ROOT_DIRS[${j}]}"
 			echo "INFO: Rsyncing ${RSYNC_SOURCE} to ${RSYNC_DESTINATION}..."
-			if [ "${LIST}" -eq 1 ]; then
+			if [[ "${LIST}" -eq 1 ]]; then
 				{
 					echo '================================================================================================================'
 					echo "	Dry run stats for syncing ${RSYNC_SOURCE} to ${RSYNC_DESTINATION}:"
@@ -245,6 +245,7 @@ EOCT
 #
 set -u
 set -e
+set -o pipefail
 
 #
 # Trap all exit signals: HUP(1), INT(2), QUIT(3), TERM(15), ERR
@@ -258,10 +259,14 @@ trap 'reportError $LINENO' HUP INT QUIT TERM EXIT ERR
 #
 
 #
-# Get path to directory where this script is located.
+# Get path to directory where this script is located
+# as well as the name of the machine where the script was executed.
 #
 SCRIPT_DIR=$(cd -P "$( dirname "$0" )" && pwd)
 SCRIPT_NAME=$(basename "$0" .bash)
+if [[ -z "${HOSTNAME:-}" ]]; then
+	HOSTNAME="$(hostname)"
+fi
 
 #
 # Script's config must be in the same location.
@@ -273,9 +278,9 @@ if [[ -r "${SCRIPT_CONFIG}" && -f "${SCRIPT_CONFIG}" ]]; then
 	source "${SCRIPT_CONFIG}" || reportError "${LINENO}" "${?}" "Cannot source ${SCRIPT_CONFIG}."
 else
 	createConfigTemplate
-	logger -s "$(hostname) - ${SCRIPT_NAME}:${LINENO}: FATAL: Cannot find/access ${SCRIPT_CONFIG}!"
-	logger -s "$(hostname) - ${SCRIPT_NAME}:${LINENO}: INFO:Created a template config file with disabled options: ${SCRIPT_CONFIG}.template."
-	logger -s "$(hostname) - ${SCRIPT_NAME}:${LINENO}: INFO:	Edit + rename template and try again."
+	logger -s "${HOSTNAME} - ${SCRIPT_NAME}:${LINENO}: FATAL: Cannot find/access ${SCRIPT_CONFIG}!"
+	logger -s "${HOSTNAME} - ${SCRIPT_NAME}:${LINENO}: INFO:Created a template config file with disabled options: ${SCRIPT_CONFIG}.template."
+	logger -s "${HOSTNAME} - ${SCRIPT_NAME}:${LINENO}: INFO:	Edit + rename template and try again."
 	trap - EXIT
 	exit 1
 fi
@@ -348,12 +353,12 @@ done
 #
 ARG_SUM=$((${ALL}+${REFDATA}+${MODULE}))
 
-if [ "${ARG_SUM}" -eq 0 ]; then
+if [[ "${ARG_SUM}" -eq 0 ]]; then
 	#
 	# No commandline arguments specified.
 	#
 	showHelp
-elif [ "${ARG_SUM}" -gt 1 ]; then
+elif [[ "${ARG_SUM}" -gt 1 ]]; then
 	reportError "${LINENO}" '1' "Too many mutually exclusive arguments specified. For help try: $(basename "${0}") -h"
 fi
 
@@ -377,12 +382,12 @@ elif [[ "${REFDATA}" -eq 1 ]]; then
 	# Remove leading ${SOURCE_ROOT_PATH}/data/ from SOURCE if an absolute path was specified.
 	#
 	shopt -s extglob
-	SOURCE="${SOURCE##${SOURCE_ROOT_PATH}*${REFDATA_DIR_NAME}*([/])}"
+	SOURCE="${SOURCE##"${SOURCE_ROOT_PATH}"*"${REFDATA_DIR_NAME}"*([/])}"
 	#
 	# Find and add only specified reference data to list of data to rsync.
 	#
 	cd "${SOURCE_ROOT_PATH}/" 2> "${TMP_LOG}" || reportError "${LINENO}" "${?}"
-	if [ -e "${SOURCE_ROOT_PATH}/${REFDATA_DIR_NAME}/${SOURCE}" ]; then
+	if [[ -e "${SOURCE_ROOT_PATH}/${REFDATA_DIR_NAME}/${SOURCE}" ]]; then
 		echo "INFO: Found reference data ${SOURCE}."
 	else
 		reportError "${LINENO}" "${?}" "Cannot find reference data ${SOURCE} in ${SOURCE_ROOT_PATH}/${REFDATA_DIR_NAME}/."
@@ -417,10 +422,10 @@ elif [[ "${MODULE}" -eq 1 ]]; then
 		#	* either TCL format for backward compatibility (module file without extension)
 		#	* or Lua format (with *.lua extension).
 		#
-		readarray -t VERSIONED_MODULES < <(\
-			find "${SOURCE_ROOT_PATH}/${MODULES_DIR_NAME}/" -wholename '*/'"${MODULE_NAME}/${MODULE_VERSION}"'*' \
-			| sed "s|${SOURCE_ROOT_PATH}//*${MODULES_DIR_NAME}//*||" \
-		) || reportError "${LINENO}" "${?}" "Cannot find module files for module ${MODULE_NAME}/${MODULE_VERSION} in ${SOURCE_ROOT_PATH}/${MODULES_DIR_NAME}/."
+		found_modules="$(find "${SOURCE_ROOT_PATH}/${MODULES_DIR_NAME}/" -wholename '*/'"${MODULE_NAME}/${MODULE_VERSION}"'*' \
+				| sed "s|${SOURCE_ROOT_PATH}//*${MODULES_DIR_NAME}//*||")" \
+			|| reportError "${LINENO}" "${?}" "Cannot find module files for module ${MODULE_NAME}/${MODULE_VERSION} in ${SOURCE_ROOT_PATH}/${MODULES_DIR_NAME}/."
+		readarray -t VERSIONED_MODULES <<< "${found_modules}"
 		if [[ "${#VERSIONED_MODULES[@]}" -ge 1 ]]; then
 			echo "INFO: Found module file(s) for ${SOURCE}."
 		else
@@ -467,11 +472,11 @@ declare -a RSYNC_OPTIONS=('-rlptgDvRK')
 # We don't sync permissions and change them explicitly.
 #
 RSYNC_OPTIONS+=('--perms' '--chmod=u=rwX,go=rX')
-if [ "${DELETE_OLD}" -eq 1 ]; then
+if [[ "${DELETE_OLD}" -eq 1 ]]; then
 	echo "WARN: Cleanup of outdated ${SOURCE_ROOT_PATH} data is enabled for ${DESTINATION_MOUNT_POINT_PARENTS[*]}."
 	RSYNC_OPTIONS+=('--delete-after')
 fi
-if [ "${LIST}" -eq 1 ]; then
+if [[ "${LIST}" -eq 1 ]]; then
 	echo 'WARN: List mode enabled: will only list what is out of sync and needs to be updated, but will not perform actual sync.'
 	RSYNC_OPTIONS+=('-nu')
 else
@@ -502,7 +507,7 @@ fi
 # Update Lmod cache.
 #
 UPDATE_LMOD_CACHE=$(command -v update_lmod_system_cache_files 2> /dev/null || echo -n 'missing')
-if [ "${LMOD_VERSION%%.*}" -gt 6 ]; then
+if [[ "${LMOD_VERSION%%.*}" -gt 6 ]]; then
 	lmod_modulepath="${MODULEPATH}"
 	#shellcheck disable=SC2016
 	printf 'INFO: found lmod version > 6.x (%s); will use $MODULEPATH.\n' "${LMOD_VERSION}"
@@ -528,7 +533,7 @@ fi
 # Recursively fix group + permissions on SOURCE (should not be necessary, but just in case :))
 #
 cd "${SOURCE_ROOT_PATH}"
-for (( i = 0 ; i < "${#RSYNC_SOURCES[@]:-0}" ; i++ ))
+for (( i = 0 ; i < "${#RSYNC_SOURCES[@]}" ; i++ ))
 do
 	echo "INFO: Trying to fix group and permissions on ${SOURCE_ROOT_PATH}${RSYNC_SOURCES[${i}]} recursively before sync."
 	echo '      Should not be necessary, but just in case...'
@@ -549,18 +554,19 @@ done
 # which is usually a relatively small disk containing the OS. Running out of space on the local system disk, will crash a server!
 #
 declare -a AVAILABLE_DESTINATION_ROOT_DIRS
-for (( i = 0 ; i < "${#DESTINATION_MOUNT_POINT_PARENTS[@]:-0}" ; i++ ))
+for (( i = 0 ; i < "${#DESTINATION_MOUNT_POINT_PARENTS[@]}" ; i++ ))
 do 
 	#
 	# Check for presence of folders for logical file system (LFS) names
 	# and if present whether they contain a copy of ${SOURCE_ROOT_PATH}.
 	#
-	readarray -t LFS_MOUNT_POINTS < <(find "${DESTINATION_MOUNT_POINT_PARENTS[${i}]}" -mindepth 1 -maxdepth 1 -type d)
-	for (( j = 0 ; j < "${#LFS_MOUNT_POINTS[@]:-0}" ; j++ ))
+	found="$(find "${DESTINATION_MOUNT_POINT_PARENTS[${i}]}" -mindepth 1 -maxdepth 1 -type d)"
+	readarray -t LFS_MOUNT_POINTS <<< "${found}"
+	for (( j = 0 ; j < "${#LFS_MOUNT_POINTS[@]}" ; j++ ))
 	do
 		DESTINATION_ROOT_DIR="${LFS_MOUNT_POINTS[${j}]}${SOURCE_ROOT_PATH}"
 		if [[ -e "${DESTINATION_ROOT_DIR}" ]] && [[ -r "${DESTINATION_ROOT_DIR}" ]] && [[ -w "${DESTINATION_ROOT_DIR}" ]]; then
-			if [[ "${#AVAILABLE_DESTINATION_ROOT_DIRS[@]:-0}" -eq 0 ]]; then
+			if [[ "${#AVAILABLE_DESTINATION_ROOT_DIRS[@]}" -eq 0 ]]; then
 				AVAILABLE_DESTINATION_ROOT_DIRS=("${DESTINATION_ROOT_DIR}")
 			else
 				AVAILABLE_DESTINATION_ROOT_DIRS=("${AVAILABLE_DESTINATION_ROOT_DIRS[@]:-}" "${DESTINATION_ROOT_DIR}")
@@ -576,7 +582,7 @@ done
 ### Rsync.
 ##
 #
-if [ "${#AVAILABLE_DESTINATION_ROOT_DIRS[@]:-0}" -gt 0 ]; then
+if [[ "${#AVAILABLE_DESTINATION_ROOT_DIRS[@]}" -gt 0 ]]; then
 	echo "INFO: AVAILABLE_DESTINATION_ROOT_DIRS contains ${AVAILABLE_DESTINATION_ROOT_DIRS[*]}"
 	#
 	# Perform the rsync for all sources that need to be synced to all destinations.
@@ -595,7 +601,7 @@ fi
 #
 # Parse log: rsync log should exist and should be empty.
 #
-if [ "${LIST}" -eq 1 ]; then
+if [[ "${LIST}" -eq 1 ]]; then
 	cat "${RSYNC_LOG}" || reportError "${LINENO}" "${?}" "Listing differences between sources (${RSYNC_SOURCES[*]}) and destinations (${AVAILABLE_DESTINATION_ROOT_DIRS[*]}) started on ${START_TS} failed: cannot display ${RSYNC_LOG} contents!"
 elif [[ ! -f "${RSYNC_LOG}" || -s "${RSYNC_LOG}" ]]; then
 	reportError "${LINENO}" "${?}" "Rsync of sources (${RSYNC_SOURCES[*]}) to destinations (${AVAILABLE_DESTINATION_ROOT_DIRS[*]}) started on ${START_TS} failed: error log not empty!"
@@ -604,7 +610,7 @@ fi
 #
 # Cleanup.
 #
-if [ -e "${TMP_DIR}" ]; then
+if [[ -e "${TMP_DIR}" ]]; then
 	(rm -f "${TMP_LOG}" ; rm -f "${RSYNC_LOG}" ; rmdir "${TMP_DIR}") || reportError "${LINENO}" "${?}" "Cannot cleanup tmp dir ${TMP_DIR}."
 fi
 
