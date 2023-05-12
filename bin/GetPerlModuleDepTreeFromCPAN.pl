@@ -82,13 +82,11 @@ $output_format = (
 ### Main.
 ##
 #
-
-foreach my $module (@modules) {
-	my @deps = CPAN::FindDependencies::finddeps("$module", 'perl' => $perl_version);
-	push(@all_deps, @deps);
-}
-
 if ($output_format eq 'list') {
+	foreach my $module (@modules) {
+		my @deps = CPAN::FindDependencies::finddeps("$module", 'perl' => $perl_version);
+		push(@all_deps, @deps);
+	}
 	foreach my $dep (@all_deps) {
 		print ' ' x $dep->depth;
 		if($dep->warning()) {
@@ -99,15 +97,13 @@ if ($output_format eq 'list') {
 		print $dep->name, ' [', $dep->distribution(), ']' . "\n";
 	}
 } elsif ($output_format eq 'eb') {
-	my @uniq_deps     = _Uniq(reverse(@all_deps));
+	foreach my $module (@modules) {
+		my @deps = CPAN::FindDependencies::finddeps("$module", 'perl' => $perl_version);
+		push(@all_deps, reverse(@deps));
+	}
+	my @uniq_deps = _Uniq(@all_deps);
 	print 'exts_list = [' . "\n";
 	foreach my $dep (@uniq_deps) {
-		#    ('Text::CSV', '1.33', {
-		#        'source_tmpl': 'Text-CSV-1.33.tar.gz',
-		#        'source_urls': ['https://cpan.metacpan.org/authors/id/M/MA/MAKAMAKA'],
-		#    }),
-		
-		#Test::Warnings [E/ET/ETHER/Test-Warnings-0.026.tar.gz
 		my $module = $dep->name();
 		my $distro = $dep->distribution();
 		my $archive;
@@ -122,6 +118,14 @@ if ($output_format eq 'list') {
 			exit 1;
 		}
 		my $url = 'https://cpan.metacpan.org/authors/id/' . $author;
+		#
+		# Example of EasyConfig format:
+		#
+		#    ('Text::CSV', '1.33', {
+		#        'source_tmpl': 'Text-CSV-1.33.tar.gz',
+		#        'source_urls': ['https://cpan.metacpan.org/authors/id/M/MA/MAKAMAKA'],
+		#    }),
+		#
 		print '    (\'' . $module . '\', \'' . $version . '\', {' . "\n";
 		print '        \'source_tmpl\': \'' . $archive . '\',' . "\n";
 		print '        \'source_urls\': [\'' . $url . '\'],' . "\n";
