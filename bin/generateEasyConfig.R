@@ -59,35 +59,47 @@ repos$bioconductor$active = c('http://www.bioconductor.org/packages/release/bioc
 #    'NLopt'='2.6.1'
 #)
 #
-# This list is for R 4.0.x with foss 2018b:
+# This list is for R 4.2.x with foss 2022a:
 #
 dependency_defaults <-list(
-    'pkg-config'='0.29.2',
-    'libreadline'='8.0',
-    'ncurses'='6.2',
+    'pkgconf'='1.8.0',
+    'Xvfb'='21.1.3',
+    'Autotools'='20220317',
+    'R'='4.2.1-bare',
+    'X11'='20220504',
+    'Mesa'='22.0.3',
+    'libGLU'='9.0.2',
+    'cairo'='1.17.4',
+    'libreadline'='8.1.2',
+    'ncurses'='6.3',
     'bzip2'='1.0.8',
     'XZ'='5.2.5',
-    'zlib'='1.2.11',
-    'SQLite'='3.34.0',
-    'PCRE2'='10.36',
-    'Java'='11-LTS',
-    'cURL'='7.74.0',
-    'libxml2'='2.9.10',
+    'zlib'='1.2.12',
+    'SQLite'='3.38.3',
+    'PCRE2'='10.40',
     'libpng'='1.6.37',
-    'libjpeg-turbo'='2.0.6',
-    'LibTIFF'='4.2.0',
-    'cairo'='1.16.0-2',
-    'Pango'='1.48.0',
-    'OpenSSL'='1.1.1i',
+    'libjpeg-turbo'='2.1.3',
+    'LibTIFF'='4.3.0',
+    'Java'='11-LTS',
+    'Tcl'='8.6.12',
+    'Tk'='8.6.12',
+    'cURL'='7.83.0',
+    'libxml2'='2.9.13',
     'GMP'='6.2.1',
+    'NLopt'='2.7.1',
+    'FFTW'='3.3.10',
+    'libsndfile'='1.1.0',
+    'ICU'='71.1',
+    'HDF5'='1.12.2',
     'UDUNITS'='2.2.28',
-    'ImageMagick'='7.0.10-59',
-    'MariaDB-connector-c'='3.1.11',
-    'NLopt'='2.7.0',
-    'HDF5'='1.10.7',
-    'nodejs'='14.15.4',
-    'unixODBC'='2.3.9',
-    'librsvg'='2.50.2'
+    'GSL'='2.7',
+    'ImageMagick'='7.1.0-37',
+    'GLPK'='5.0',
+    'nodejs'='16.15.1',
+    'GDAL'='3.5.0',
+    'MPFR'='4.1.0',
+    'libgit2'='1.4.3',
+    'OpenSSL'='1.1.1q'
 )
 
 #
@@ -118,8 +130,8 @@ Example usage:
     module load EasyBuild
     module load R
     module load dependency/updated_version
-    generateEasyConfig.R  --tc  foss/2018b \\
-                          --vs  19.07.1 \\
+    generateEasyConfig.R  --tc  foss/2022a \\
+                          --vs  22.12.1 \\
                           --od  /path/to/my/EasyConfigs/r/R/ \\
                           --ll  WARNING 
 
@@ -340,7 +352,7 @@ writeECR <- function (fh, version, deps, packages, repos, toolchain.name, toolch
     writeLines("", fh)
     writeLines("dependencies = [", fh)
     writeLines(paste("    ('libreadline', '",   deps[['libreadline']],   "'),",           sep=''), fh)
-    writeLines(paste("    ('ncurses', '",       deps[['ncurses']],       "'),",           sep=''), fh)
+    writeLines(paste("    ('ncurses', '",	deps[['ncurses']],	 "'),",           sep=''), fh)
     writeLines(paste("    ('bzip2', '",         deps[['bzip2']],         "'),",           sep=''), fh)
     writeLines(paste("    ('XZ', '",            deps[['XZ']],            "'),",           sep=''), fh)
     writeLines(paste("    ('zlib', '",          deps[['zlib']],          "'),",           sep=''), fh)
@@ -348,10 +360,10 @@ writeECR <- function (fh, version, deps, packages, repos, toolchain.name, toolch
     writeLines(paste("    ('PCRE2', '",         deps[['PCRE2']],         "'),",           sep=''), fh)
     writeLines(paste("    ('Java', '",          deps[['Java']],          "', '', True),", sep=''), fh)
     writeLines(paste("    ('cURL', '",          deps[['cURL']],          "'),",           sep=''), fh)
-    writeLines(paste("    ('libxml2', '",       deps[['libxml2']],       "'),",           sep=''), fh)
+    writeLines(paste("    ('libxml2', '",	deps[['libxml2']],	 "'),",           sep=''), fh)
     writeLines(paste("    ('libpng', '",        deps[['libpng']],        "'),",           sep=''), fh)
     writeLines(paste("    ('libjpeg-turbo', '", deps[['libjpeg-turbo']], "'),",           sep=''), fh)
-    writeLines(paste("    ('LibTIFF', '",       deps[['LibTIFF']],       "'),",           sep=''), fh)
+    writeLines(paste("    ('LibTIFF', '",	deps[['LibTIFF']],	 "'),",           sep=''), fh)
     writeLines(paste("    ('cairo', '",         deps[['cairo']],         "'),",           sep=''), fh)
     writeLines(paste("    ('Pango', '",         deps[['Pango']],         "'),",           sep=''), fh)
     writeLines("    #", fh)
@@ -363,7 +375,6 @@ writeECR <- function (fh, version, deps, packages, repos, toolchain.name, toolch
     writeLines("    # OS dependency should be preferred if the os version is more recent then this version,", fh)
     writeLines("    # it's nice to have an up to date openssl for security reasons.", fh)
     writeLines("    #", fh)
-    writeLines(paste("    ('OpenSSL', '",       deps[['OpenSSL']],         "'),",           sep=''), fh)
     writeLines("]", fh)
     writeLines("", fh)
     writeLines("#osdependencies = [OS_PKG_OPENSSL_DEV]", fh)
@@ -422,20 +433,47 @@ writeECRPlus <- function (fh, version, deps, packages, repos, toolchain.name, to
     writeLines("# The alternative is to replace the https URLs with http URLs in the generated EasyConfig.", fh)
     writeLines("#", fh)
     writeLines("builddependencies = [", fh)
-    writeLines("    ('Python', '3.9.1', '-bare')", fh)
+    writeLines(paste("    ('pkgconf', '",    deps[['pkgconf']],    "'),",           sep=''), fh)
+    writeLines(paste("    ('Xvfb', '",          deps[['Xvfb']],          "'),",           sep=''), fh)
+    writeLines(paste("    ('Autotools', '",     deps[['Autotools']],     "'),",           sep=''), fh)
     writeLines("]", fh)
     writeLines("", fh)
     writeLines("dependencies = [", fh)
     writeLines("    ('R', '%(version)s', '-bare'),", fh)
-    writeLines(paste("    ('GMP', '",                 deps[['GMP']],                 "'),", sep=''), fh)
-    writeLines(paste("    ('UDUNITS', '",             deps[['UDUNITS']],             "'),", sep=''), fh)
-    writeLines(paste("    ('ImageMagick', '",         deps[['ImageMagick']],         "'),", sep=''), fh)
-    writeLines(paste("    ('MariaDB-connector-c', '", deps[['MariaDB-connector-c']], "'),", sep=''), fh)
-    writeLines(paste("    ('NLopt', '",               deps[['NLopt']],               "'),", sep=''), fh)
-    writeLines(paste("    ('HDF5', '",                deps[['HDF5']],                "'),", sep=''), fh)
-    writeLines(paste("    ('nodejs', '",              deps[['nodejs']],              "'),", sep=''), fh)
-    writeLines(paste("    ('unixODBC', '",            deps[['unixODBC']],            "'),", sep=''), fh)
-    writeLines(paste("    ('librsvg', '",             deps[['librsvg']],             "'),", sep=''), fh)
+    writeLines(paste("    ('X11', '",           deps[['X11']],           "'),",           sep=''), fh)
+    writeLines(paste("    ('Mesa', '",          deps[['Mesa']],          "'),",           sep=''), fh)
+    writeLines(paste("    ('libGLU', '",        deps[['libGLU']],        "'),",           sep=''), fh)
+    writeLines(paste("    ('cairo', '",         deps[['cairo']],         "'),",           sep=''), fh)
+    writeLines(paste("    ('libreadline', '",   deps[['libreadline']],   "'),",           sep=''), fh)
+    writeLines(paste("    ('ncurses', '",	deps[['ncurses']],	 "'),",           sep=''), fh)
+    writeLines(paste("    ('bzip2', '",         deps[['bzip2']],         "'),",           sep=''), fh)
+    writeLines(paste("    ('XZ', '",            deps[['XZ']],            "'),",           sep=''), fh)
+    writeLines(paste("    ('zlib', '",          deps[['zlib']],          "'),",           sep=''), fh)
+    writeLines(paste("    ('SQLite', '",        deps[['SQLite']],        "'),",           sep=''), fh)
+    writeLines(paste("    ('PCRE2', '",         deps[['PCRE2']],         "'),",           sep=''), fh)
+    writeLines(paste("    ('libpng', '",        deps[['libpng']],        "'),",           sep=''), fh)
+    writeLines(paste("    ('libjpeg-turbo', '", deps[['libjpeg-turbo']], "'),",           sep=''), fh)
+    writeLines(paste("    ('LibTIFF', '",	deps[['LibTIFF']],	 "'),",           sep=''), fh)
+    writeLines(paste("    ('Java', '",          deps[['Java']],          "', '', True),", sep=''), fh)
+    writeLines(paste("    ('cURL', '",          deps[['cURL']],          "'),",           sep=''), fh)
+    writeLines(paste("    ('libxml2', '",	deps[['libxml2']],	 "'),",           sep=''), fh)
+    writeLines(paste("    ('Tk', '",            deps[['Tk']],         	 "'),",           sep=''), fh)
+    writeLines(paste("    ('Tcl', '",           deps[['Tcl']],         	 "'),",           sep=''), fh)
+    writeLines(paste("    ('GMP', '",           deps[['GMP']],         	 "'),",           sep=''), fh)
+    writeLines(paste("    ('NLopt', '",         deps[['NLopt']],         "'),",           sep=''), fh)
+    writeLines(paste("    ('FFTW', '",          deps[['FFTW']],          "'),",           sep=''), fh)
+    writeLines(paste("    ('libsndfile', '",    deps[['libsndfile']],    "'),",           sep=''), fh)
+    writeLines(paste("    ('ICU', '",           deps[['ICU']],           "'),",           sep=''), fh)
+    writeLines(paste("    ('HDF5', '",          deps[['HDF5']],          "'),",           sep=''), fh)
+    writeLines(paste("    ('UDUNITS', '",	deps[['UDUNITS']],       "'),",           sep=''), fh)
+    writeLines(paste("    ('GSL', '",           deps[['GSL']],           "'),",           sep=''), fh)
+    writeLines(paste("    ('ImageMagick', '",   deps[['ImageMagick']],   "'),",           sep=''), fh)
+    writeLines(paste("    ('GLPK', '",          deps[['GLPK']],          "'),",           sep=''), fh)
+    writeLines(paste("    ('nodejs', '",        deps[['nodejs']],        "'),",           sep=''), fh)
+    writeLines(paste("    ('GDAL', '",          deps[['GDAL']],          "'),",           sep=''), fh)
+    writeLines(paste("    ('MPFR', '",          deps[['MPFR']],          "'),",           sep=''), fh)
+    writeLines(paste("    ('libgit2', '",	deps[['libgit2']],       "'),",           sep=''), fh)
+    writeLines(paste("    ('OpenSSL', '",	deps[['OpenSSL']],       "'),",           sep=''), fh)
     writeLines("]", fh)
     writeLines("", fh)
     writeLines("#", fh)
