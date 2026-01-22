@@ -414,34 +414,65 @@ elif [[ "${MODULE}" -eq 1 ]]; then
 		RSYNC_SOURCES+=("${MODULES_DIR_NAME}")
 	else
 		#
-		# Find module: Lmod modules may be present in multiple "category" sub dirs. 
-		# Usually the module file is present only once in the "all" category 
-		# and present in one or more other categories as symlink to the one in "all".
+		# Find modules: Lmod modules may be present in multiple "category" sub dirs.
 		#
-		# Lmod module files can be in
-		#	* either TCL format for backward compatibility (module file without extension)
-		#	* or Lua format (with *.lua extension).
+		# Regular module files are present
+		#  * once as a file in the "all" category sub dir
+		#  * and in one or more other category sub dirs as symlink to the one in "all".
+		#
+		# Alternatively MODULE_NAME/MODULE_VERSION could be an alias.
+		# E.g. Java/21-LTS -> Java/21.0.7
+		# Such aliases are not stored in regular module files per MODULE_VERSION,
+		# but in one .modulerc file per MODULE_NAME instead.
+		#
+		# Lmod module files and .modulerc files can be in
+		#	* either TCL format for backward compatibility (file name without extension)
+		#	* or Lua format (file name with *.lua extension).
 		#
 		found_modules="$(find "${SOURCE_ROOT_PATH}/${MODULES_DIR_NAME}/" -wholename '*/'"${MODULE_NAME}/${MODULE_VERSION}"'*' \
 				| sed "s|${SOURCE_ROOT_PATH}//*${MODULES_DIR_NAME}//*||")" \
-			|| reportError "${LINENO}" "${?}" "Cannot find module files for module ${MODULE_NAME}/${MODULE_VERSION} in ${SOURCE_ROOT_PATH}/${MODULES_DIR_NAME}/."
-		readarray -t VERSIONED_MODULES <<< "${found_modules}"
+			|| reportError "${LINENO}" "${?}" "Failed to execute find + sed to search for module files in ${SOURCE_ROOT_PATH}/${MODULES_DIR_NAME}/."
+		found_dotmodulercs="$(find "${SOURCE_ROOT_PATH}/${MODULES_DIR_NAME}/" -wholename '*/'"${MODULE_NAME}/.modulerc"'*' \
+				| sed "s|${SOURCE_ROOT_PATH}//*${MODULES_DIR_NAME}//*||")" \
+			|| reportError "${LINENO}" "${?}" "Failed to execute find + sed to search for .modulerc files in ${SOURCE_ROOT_PATH}/${MODULES_DIR_NAME}/."
+		readarray -t VERSIONED_MODULES < <(printf '%s' "${found_modules}")
+		readarray -t DOTMODULERCS < <(printf '%s' "${found_dotmodulercs}")
 		if [[ "${#VERSIONED_MODULES[@]}" -ge 1 ]]; then
 			echo "INFO: Found module file(s) for ${SOURCE}."
+			#
+			# Append to list of RSYNC SOURCES.
+			#
+			for VERSIONED_MODULE in "${VERSIONED_MODULES[@]}"; do
+				RSYNC_SOURCES+=("${MODULES_DIR_NAME}/${VERSIONED_MODULE}")
+				#echo "DEBUG: Appended ${MODULES_DIR_NAME}/${VERSIONED_MODULE} to RSYNC_SOURCES."
+			done
+		elif [[ "${#DOTMODULERCS[@]}" -ge 1 ]]; then
+			found_module_in_dotmodulerc='false'
+			for DOTMODULERC in "${DOTMODULERCS[@]}"; do
+				if grep -q "${MODULE_VERSION}" "${SOURCE_ROOT_PATH}/${MODULES_DIR_NAME}/${DOTMODULERC}"; then
+					found_module_in_dotmodulerc='true'
+					#
+					# Append to list of RSYNC SOURCES.
+					#
+					RSYNC_SOURCES+=("${MODULES_DIR_NAME}/${DOTMODULERC}")
+					#echo "DEBUG: Appended ${MODULES_DIR_NAME}/${DOTMODULERC} to RSYNC_SOURCES."
+				fi
+			done
+			if [[ "${found_module_in_dotmodulerc}" == 'true' ]]; then
+				echo "INFO: Found .modulerc file(s) for ${SOURCE}."
+			else
+				reportError "${LINENO}" '1' "Cannot find module version ${MODULE_VERSION} in a regular module file nor in any .modulerc file for ${MODULE_NAME} in ${SOURCE_ROOT_PATH}/${MODULES_DIR_NAME}/."
+			fi
 		else
-			reportError "${LINENO}" '1' "Cannot find module ${MODULE_NAME}/${MODULE_VERSION} in ${SOURCE_ROOT_PATH}/${MODULES_DIR_NAME}/."
+			reportError "${LINENO}" '1' "Cannot find module file nor .modulerc file for ${MODULE_NAME}/${MODULE_VERSION} in ${SOURCE_ROOT_PATH}/${MODULES_DIR_NAME}/."
 		fi
 		#
 		# Find dir where software is installed for this module.
 		#
 		if [[ -d "${SOURCE_ROOT_PATH}/${SOFTWARE_DIR_NAME}/${MODULE_NAME}/${MODULE_VERSION}" ]]; then
 			#
-			# Create list of RSYNC SOURCES.
+			# Append to list of RSYNC SOURCES.
 			#
-			for VERSIONED_MODULE in "${VERSIONED_MODULES[@]}"; do
-				RSYNC_SOURCES+=("${MODULES_DIR_NAME}/${VERSIONED_MODULE}")
-				#echo "DEBUG: Appended ${MODULES_DIR_NAME}/${VERSIONED_MODULE} to RSYNC_SOURCES."
-			done
 			RSYNC_SOURCES+=("${SOFTWARE_DIR_NAME}/${MODULE_NAME}/${MODULE_VERSION}")
 			#echo "DEBUG: Appended ${SOFTWARE_DIR_NAME}/${MODULE_NAME}/${MODULE_VERSION} to RSYNC_SOURCES."
 		else
