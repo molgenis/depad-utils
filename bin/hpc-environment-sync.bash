@@ -73,7 +73,7 @@ Details:
 		for software installed in  ${SOURCE_ROOT_PATH}${SOFTWARE_DIR_NAME}/
 		The special NAME/VERSION combination ANY/ANY will sync all modules.
 
-To change the options like source and destination dirs modify the ${SCRIPT_CONFIG} config file.
+To change the options like source and destination dirs modify the ${SCRIPT_CONFIG_FILE} config file.
 
 Currently configured destination mount points to search for Logical File Systems (LFS) to sync environment to: 
 	${DESTINATION_MOUNT_POINT_PARENTS[@]}
@@ -187,7 +187,7 @@ function performSync() {
 }
 
 function createConfigTemplate () {
-	(cat > "${SCRIPT_CONFIG}.template"  <<EOCT 
+	(cat > "${SCRIPT_CONFIG_FILE}.template"  <<EOCT 
 
 ##########################################################
 # Configuration file for the ${SCRIPT_NAME} script.
@@ -231,7 +231,7 @@ function createConfigTemplate () {
 
 #
 # Name of the host where we will try to execute the Slurm sinfo and scontrol commands
-# in order to find the list of compute nodes, which have a on local file system,
+# in order to find the list of compute nodes, which have cache on a local file system,
 # where we can store a copy of our cache.
 #
 #declare SLURM_HOST=user_interface_hostname
@@ -249,7 +249,7 @@ DELETE_OLD=0
 
 EOCT
 )	|| {
-		echo "FATAL: Cannot find/access ${SCRIPT_CONFIG} and could not create a template config file with disabled options either."
+		echo "FATAL: Cannot find/access ${SCRIPT_CONFIG_FILE} and could not create a template config file with disabled options either."
 		trap - EXIT
 		exit 1
 	}
@@ -280,28 +280,28 @@ trap 'reportError $LINENO' HUP INT QUIT TERM EXIT ERR
 #
 
 #
-# Get path to directory where this script is located
-# as well as the name of the machine where the script was executed.
+# Get the name of the machine where the script was executed.
 #
-SCRIPT_DIR=$(cd -P "$( dirname "$0" )" && pwd)
 SCRIPT_NAME=$(basename "$0" .bash)
 if [[ -z "${HOSTNAME:-}" ]]; then
 	HOSTNAME="$(hostname)"
 fi
+SCRIPT_CONFIG_DIR="${HOME}/.config/${SCRIPT_NAME}/"
 
 #
-# Script's config must be in the same location.
+# Check if config exists.
 #
-SCRIPT_CONFIG="${SCRIPT_DIR}/${SCRIPT_NAME}.cfg"
-if [[ -r "${SCRIPT_CONFIG}" && -f "${SCRIPT_CONFIG}" ]]; then
+mkdir -p -m 700 "${SCRIPT_CONFIG_DIR}"
+SCRIPT_CONFIG_FILE="${SCRIPT_CONFIG_DIR}/${SCRIPT_NAME}.cfg"
+if [[ -r "${SCRIPT_CONFIG_FILE}" && -f "${SCRIPT_CONFIG_FILE}" ]]; then
 	# Disable shellcheck code syntax checking for config files.
 	# shellcheck source=/dev/null
-	source "${SCRIPT_CONFIG}" || reportError "${LINENO}" "${?}" "Cannot source ${SCRIPT_CONFIG}."
+	source "${SCRIPT_CONFIG_FILE}" || reportError "${LINENO}" "${?}" "Cannot source ${SCRIPT_CONFIG_FILE}."
 else
 	createConfigTemplate
-	logger -s "${HOSTNAME} - ${SCRIPT_NAME}:${LINENO}: FATAL: Cannot find/access ${SCRIPT_CONFIG}!"
-	logger -s "${HOSTNAME} - ${SCRIPT_NAME}:${LINENO}: INFO:Created a template config file with disabled options: ${SCRIPT_CONFIG}.template."
-	logger -s "${HOSTNAME} - ${SCRIPT_NAME}:${LINENO}: INFO:	Edit + rename template and try again."
+	logger -s "${HOSTNAME} - ${SCRIPT_NAME}:${LINENO}: FATAL: Cannot find/access ${SCRIPT_CONFIG_FILE}!"
+	logger -s "${HOSTNAME} - ${SCRIPT_NAME}:${LINENO}: INFO: Created a template config file with disabled options: ${SCRIPT_CONFIG_FILE}.template."
+	logger -s "${HOSTNAME} - ${SCRIPT_NAME}:${LINENO}: INFO: Edit + rename template and try again."
 	trap - EXIT
 	exit 1
 fi
@@ -692,7 +692,7 @@ if [[ "${ALL}" -eq 1 ]] || [[ "${CACHE}" -eq 1 ]]; then
 			fi
 		done <<< "${sinfo_result}"
 	else
-		reportError "${LINENO}" '1' "The SLURM_HOST variable is not defined in ${SCRIPT_CONFIG}."
+		reportError "${LINENO}" '1' "The SLURM_HOST variable is not defined in ${SCRIPT_CONFIG_FILE}."
 	fi
 	if [[ "${#DESTINATION_CACHE_DIRS[@]}" -gt 0 ]]; then
 		AVAILABLE_DESTINATION_ROOT_DIRS=("${DESTINATION_CACHE_DIRS[@]}")
