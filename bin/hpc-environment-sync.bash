@@ -291,6 +291,7 @@ SCRIPT_CONFIG_DIR="${HOME}/.config/${SCRIPT_NAME}/"
 #
 # Check if config exists.
 #
+# shellcheck disable=SC2174
 mkdir -p -m 700 "${SCRIPT_CONFIG_DIR}"
 SCRIPT_CONFIG_FILE="${SCRIPT_CONFIG_DIR}/${SCRIPT_NAME}.cfg"
 if [[ -r "${SCRIPT_CONFIG_FILE}" && -f "${SCRIPT_CONFIG_FILE}" ]]; then
