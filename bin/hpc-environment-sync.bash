@@ -152,6 +152,7 @@ ${DETAILED_LOGS:-}
 # Perform the rsync for all sources that need to be synced to all destinations.
 #
 function performSync() {
+	local continue_on_error="${1:-}"
 	cd "${SOURCE_ROOT_PATH}"
 	for (( i = 0 ; i < "${#RSYNC_SOURCES[@]}" ; i++ ))
 	do
@@ -175,7 +176,11 @@ function performSync() {
 			XVAL="${?}"
 			set -e
 			if [[ "${XVAL}" -ne 0 && "${XVAL}" -ne 24 ]]; then
-				reportError "${LINENO}" "${XVAL}" "Rsync of source (${RSYNC_SOURCE}) to destination (${RSYNC_DESTINATION}) started on ${START_TS} failed."
+				if [[ "${continue_on_error:-}" == 'continue_on_error' ]]; then
+					echo "WARN: Rsync of source (${RSYNC_SOURCE}) to destination (${RSYNC_DESTINATION}) started on ${START_TS} failed."
+				else
+					reportError "${LINENO}" "${XVAL}" "Rsync of source (${RSYNC_SOURCE}) to destination (${RSYNC_DESTINATION}) started on ${START_TS} failed."
+				fi
 			fi
 		done
 	done
@@ -225,13 +230,11 @@ function createConfigTemplate () {
 #declare -a DESTINATION_MOUNT_POINT_PARENTS=('/.envsync/')
 
 #
-# Locations on local file systems where we want a copy of our cache.
+# Name of the host where we will try to execute the Slurm sinfo and scontrol commands
+# in order to find the list of compute nodes, which have a on local file system,
+# where we can store a copy of our cache.
 #
-#declare -a DESTINATION_CACHE_DIRS=(
-#    'compute-node-a01:/local/'
-#    'compute-node-a02:/local/'
-#    'compute-node-a03:/local/'
-#)
+#declare SLURM_HOST=user_interface_hostname
 
 #
 # Should the script delete old stuff in DESTINATION when it is no longer present in SOURCE?
@@ -241,8 +244,8 @@ DELETE_OLD=0
 #
 # Email reporting of failures.
 #
-#EMAIL_FROM='sysop.gcc.groningen@gmail.com'
-#EMAIL_TO='gcc-analysis@googlegroups.com'
+#EMAIL_FROM=''
+#EMAIL_TO=''
 
 EOCT
 )	|| {
@@ -676,15 +679,30 @@ if [[ "${ALL}" -eq 1 ]] || [[ "${CACHE}" -eq 1 ]]; then
 		RSYNC_SOURCES=("${CACHE_DIR_NAME}/${SOURCE}")
 	fi
 	echo "INFO: RSYNC_SOURCES contains ${RSYNC_SOURCES[*]}"
+	declare -a DESTINATION_CACHE_DIRS=()
+	if [[ -n "${SLURM_HOST:-}" ]]; then
+		slurm_tmpfs_dir="$(ssh "${SLURM_HOST}" "scontrol show config | grep -i tmpfs | sed 's|.*= *||'")" \
+			|| reportError "${LINENO}" "${?}" "Failed to get Slurm TmpFs path from Slurm 'scontrol show config' command on ${SLURM_HOST}."
+		sinfo_result="$(ssh "${SLURM_HOST}" "sinfo --format='%N|%d' --Node --noheader")" \
+			|| reportError "${LINENO}" "${?}" "Failed to get list of compute nodes from Slurm 'sinfo' command on ${SLURM_HOST}."
+		DESTINATION_CACHE_DIRS+=("missing:${slurm_tmpfs_dir}/")
+		while IFS='|' read -d $'\n' -r compute_node local_scratch_disk_size; do
+			if [[ "${local_scratch_disk_size}" -gt 0 ]]; then
+				DESTINATION_CACHE_DIRS+=("${compute_node}:${slurm_tmpfs_dir}/")
+			fi
+		done <<< "${sinfo_result}"
+	else
+		reportError "${LINENO}" '1' "The SLURM_HOST variable is not defined in ${SCRIPT_CONFIG}."
+	fi
 	if [[ "${#DESTINATION_CACHE_DIRS[@]}" -gt 0 ]]; then
 		AVAILABLE_DESTINATION_ROOT_DIRS=("${DESTINATION_CACHE_DIRS[@]}")
 		echo "INFO: AVAILABLE_DESTINATION_ROOT_DIRS contains ${AVAILABLE_DESTINATION_ROOT_DIRS[*]}"
 		#
 		# Perform the rsync for all sources that need to be synced to all destinations.
 		#
-		performSync
+		performSync continue_on_error
 	else
-		echo "WARN: No destination cache dirs specified: skipping rsync!"
+		echo "WARN: No destination cache dirs available: skipping rsync!"
 	fi
 fi
 
