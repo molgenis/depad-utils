@@ -686,7 +686,6 @@ if [[ "${ALL}" -eq 1 ]] || [[ "${CACHE}" -eq 1 ]]; then
 			|| reportError "${LINENO}" "${?}" "Failed to get Slurm TmpFs path from Slurm 'scontrol show config' command on ${SLURM_HOST}."
 		sinfo_result="$(ssh "${SLURM_HOST}" "sinfo --format='%N|%d' --Node --noheader")" \
 			|| reportError "${LINENO}" "${?}" "Failed to get list of compute nodes from Slurm 'sinfo' command on ${SLURM_HOST}."
-		DESTINATION_CACHE_DIRS+=("missing:${slurm_tmpfs_dir}/")
 		while IFS='|' read -d $'\n' -r compute_node local_scratch_disk_size; do
 			if [[ "${local_scratch_disk_size}" -gt 0 ]]; then
 				DESTINATION_CACHE_DIRS+=("${compute_node}:${slurm_tmpfs_dir}/")
