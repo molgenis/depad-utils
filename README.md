@@ -22,13 +22,14 @@ Utilities for deploy admins.
 
 #### <a name="hpc-environment-syncbash"/> hpc-environment-sync.bash
 
-Use the ```hpc-environment-sync.cfg``` config file in the same location as the script to configure various defaults.
+Use the ```hpc-environment-sync.cfg``` config file in ```${HOME}/.config/hpc-environment-sync/``` to configure various defaults.
 
 ```
 Usage:
 
    hpc-environment-sync.bash [-l] -a
    hpc-environment-sync.bash [-l] -r relative/path/to/ReferenceData/
+   hpc-environment-sync.bash [-l] -c relative/path/to/CacheData/
    hpc-environment-sync.bash [-l] -m ModuleName/ModuleVersion
 
 Details:
@@ -38,13 +39,16 @@ Details:
  -a   All: syncs complete HPC environment (software, modules & reference data) from /apps/.
 
  -r   Reference data: syncs only the specified data.
-      Path may be either an absolute path or relative to ${SOURCE_ROOT_PATH}/${REFDATA_DIR_NAME} as specified in hpc-environment-sync.cfg.
+      Path may be either an absolute path or relative to ${SOURCE_ROOT_PATH}/${REFDATA_DIR_NAME}/ as specified in hpc-environment-sync.cfg.
+
+	-c	Cache data: syncs only the specified data.
+      Path may be either an absolute path or relative to ${SOURCE_ROOT_PATH}${CACHE_DIR_NAME}/ as specified in hpc-environment-sync.cfg.
 
  -m   Module: syncs only the specified module.
       The tool must have been deployed with EasyBuild, with accompanying "module" file 
       and specified using NAME/VERSION as per "module" command syntax.
-      Will search for modules in ${SOURCE_ROOT_PATH}/${MODULES_DIR_NAME}  as specified in hpc-environment-sync.cfg.
-      for software installed in  ${SOURCE_ROOT_PATH}/${SOFTWARE_DIR_NAME} as specified in hpc-environment-sync.cfg.
+      Will search for modules in ${SOURCE_ROOT_PATH}/${MODULES_DIR_NAME}/  as specified in hpc-environment-sync.cfg.
+      for software installed in  ${SOURCE_ROOT_PATH}/${SOFTWARE_DIR_NAME}/ as specified in hpc-environment-sync.cfg.
       The special NAME/VERSION combination ANY/ANY will sync all modules.
 ```
 
