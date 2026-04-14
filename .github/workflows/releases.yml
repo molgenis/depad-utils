@@ -1,0 +1,32 @@
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
+jobs:
+  CreateEasyConfigForRelease:
+    name: Create EasyConfig in take-it-easyconfig repo for new depad-utils release.
+    runs-on: ubuntu-slim
+    steps:
+    #  - name: Checkout
+    #    uses: actions/checkout@v3
+    #    with:
+    #      persist-credentials: false
+    #      fetch-depth: 0
+    #  - name: Restore timestamps
+    #    uses: chetan/git-restore-mtime-action@v1
+     - name: Get release details.
+       id: get_release_details
+       shell: bash
+       run: |
+            set -e
+            set -u
+            set -o pipefail
+            printf 'GITHUB_SHA: %s\n' '${{ env.GITHUB_SHA }}'
+            printf 'GITHUB_REF: %s\n' '${{ env.GITHUB_REF }}'
+            year="$(date '+%y')"
+            month="$date '+%m')"
