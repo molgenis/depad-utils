@@ -1,3 +1,6 @@
+name: New release action
+run-name: ${{ github.repository }} release ${{ github.ref_name }}
+
 on:
   release:
     types: [published]
@@ -19,14 +22,18 @@ jobs:
     #      fetch-depth: 0
     #  - name: Restore timestamps
     #    uses: chetan/git-restore-mtime-action@v1
-     - name: Get release details.
-       id: get_release_details
-       shell: bash
-       run: |
-            set -e
-            set -u
-            set -o pipefail
-            printf 'GITHUB_SHA: %s\n' "${GITHUB_SHA}"
-            printf 'GITHUB_REF: %s\n' "${GITHUB_REF}"
-            year="$(date '+%y')"
-            month="$(date '+%m')"
+      - name: Get release details.
+        id: get_release_details
+        shell: bash
+        run: |
+              set -e
+              set -u
+              set -o pipefail
+              printf 'GITHUB_SHA: %s\n' "${GITHUB_SHA}"
+              printf 'GITHUB_REF: %s\n' "${GITHUB_REF}"
+              year="$(date '+%y')"
+              month="$(date '+%m')"
+      - name: Tarball url
+        run: echo "${{ github.server_url }}/${{ github.repository }}/archive/refs/tags/${{ github.ref_name }}.tar.gz"
+      - name: Create tarball sha256 
+        run: curl -sL "${{ github.server_url }}/${{ github.repository }}/archive/refs/tags/${{ github.ref_name }}.tar.gz" | shasum -a 256 | cut -d " " -f 1
