@@ -78,8 +78,8 @@ To change the options like source and destination dirs modify the ${SCRIPT_CONFI
 Currently configured destination mount points to search for Logical File Systems (LFS) to sync environment to: 
 	${DESTINATION_MOUNT_POINT_PARENTS[@]}
 
-Currently configured destinations to sync cache to:
-	${DESTINATION_CACHE_DIRS[@]}
+Destinations to sync the cache to are determined dynamically by querying the Slurm config from ${SLURM_HOST}
+for a list of compute nodes with a local Slurm "TmpFS" disk.
 
 EOH
 	#
@@ -160,7 +160,7 @@ function performSync() {
 		do
 			RSYNC_SOURCE="${RSYNC_SOURCES[${i}]}"
 			RSYNC_DESTINATION="${AVAILABLE_DESTINATION_ROOT_DIRS[${j}]}"
-			echo "INFO: Rsyncing ${RSYNC_SOURCE} to ${RSYNC_DESTINATION}..."
+			echo -n "INFO: Rsyncing ${RSYNC_SOURCE} to ${RSYNC_DESTINATION}... "
 			if [[ "${LIST}" -eq 1 ]]; then
 				{
 					echo '================================================================================================================'
@@ -175,9 +175,12 @@ function performSync() {
 				>> "${RSYNC_LOG}" 2>&1
 			XVAL="${?}"
 			set -e
-			if [[ "${XVAL}" -ne 0 && "${XVAL}" -ne 24 ]]; then
+			if [[ "${XVAL}" -eq 0 || "${XVAL}" -eq 24 ]]; then
+				echo 'done.'
+			else
+				echo ''
 				if [[ "${continue_on_error:-}" == 'continue_on_error' ]]; then
-					echo "WARN: Rsync of source (${RSYNC_SOURCE}) to destination (${RSYNC_DESTINATION}) started on ${START_TS} failed."
+					echo "ERROR: Rsync of source (${RSYNC_SOURCE}) to destination (${RSYNC_DESTINATION}) started on ${START_TS} failed."
 				else
 					reportError "${LINENO}" "${XVAL}" "Rsync of source (${RSYNC_SOURCE}) to destination (${RSYNC_DESTINATION}) started on ${START_TS} failed."
 				fi
