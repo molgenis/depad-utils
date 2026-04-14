@@ -26,7 +26,7 @@ jobs:
             set -e
             set -u
             set -o pipefail
-            printf 'GITHUB_SHA: %s\n' '${{ env.GITHUB_SHA }}'
-            printf 'GITHUB_REF: %s\n' '${{ env.GITHUB_REF }}'
+            printf 'GITHUB_SHA: %s\n' "${GITHUB_SHA}"
+            printf 'GITHUB_REF: %s\n' "${GITHUB_REF}"
             year="$(date '+%y')"
-            month="$date '+%m')"
+            month="$(date '+%m')"
