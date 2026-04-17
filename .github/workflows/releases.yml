@@ -122,9 +122,16 @@ jobs:
               # Commit changes and push feature branch to origin.
               #
               git status
+              echo '== 1 ============================================'
               git add "${MODULE_NAME:0:1}/${MODULE_NAME}/${MODULE_NAME}-${MODULE_VERSION}.eb"
               git commit -m "New/updated EasyConfig for ${MODULE_NAME}/${MODULE_VERSION}."
+              echo '== 2 ============================================'
+              git status
+              echo '== 3 ============================================'
               git push --set-upstream origin "${BRANCH}"
+              echo '== 4 ============================================'
+              git status
+              echo '== 5 ============================================'
               #
               # Authorize GitHub CLI and create PR.
               #
