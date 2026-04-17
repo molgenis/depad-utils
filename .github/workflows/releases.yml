@@ -56,7 +56,7 @@ jobs:
               # Configure committer identity.
               #
               git config user.email 'github-actions[bot]@users.noreply.github.com'
-              git config user.name "github-new-release-action[bot]"
+              git config user.name 'github-new-release-action[bot]'
               #
               # Create a new feature branch for the changes.
               #
@@ -120,13 +120,14 @@ jobs:
               #
               # Commit changes and push feature branch to origin.
               #
+              git status
               git add "${MODULE_NAME:0:1}/${MODULE_NAME}/${MODULE_NAME}-${MODULE_VERSION}.eb"
               git commit -m "New/updated EasyConfig for ${MODULE_NAME}/${MODULE_VERSION}."
               git push origin "${BRANCH}"
               #
               # Authorize GitHub CLI and create PR.
               #
-              gh auth login --with-token "${{ secrets.take_it_easyconfigs_pat }}"
+              echo "${{ secrets.take_it_easyconfigs_pat }}" | gh auth login --with-token
               gh pr create \
                 --body '' \
                 --title "Auto PR: New/updated EasyConfig for ${MODULE_NAME}/${MODULE_VERSION}." \
