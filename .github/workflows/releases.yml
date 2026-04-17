@@ -14,27 +14,28 @@ jobs:
   CreateEasyConfigForRelease:
     name: Create EasyConfig in take-it-easyconfig repo for new depad-utils release.
     runs-on: ubuntu-slim
+    environment: releases
     steps:
-    #  - name: Checkout
-    #    uses: actions/checkout@v3
-    #    with:
-    #      persist-credentials: false
-    #      fetch-depth: 0
-    #  - name: Restore timestamps
-    #    uses: chetan/git-restore-mtime-action@v1
-      - name: Get release details.
-        id: get_release_details
-        shell: bash
-        run: |
-              set -e
-              set -u
-              set -o pipefail
-              printf 'GITHUB_SHA: %s\n' "${GITHUB_SHA}"
-              printf 'GITHUB_REF: %s\n' "${GITHUB_REF}"
-              year="$(date '+%y')"
-              month="$(date '+%m')"
-      - name: Tarball url
-        run: echo "${{ github.server_url }}/${{ github.repository }}/archive/refs/tags/${{ github.ref_name }}.tar.gz"
+      #  - name: Checkout
+      #    uses: actions/checkout@v3
+      #    with:
+      #      persist-credentials: false
+      #      fetch-depth: 0
+      #  - name: Restore timestamps
+      #    uses: chetan/git-restore-mtime-action@v1
+      # - name: Get release details.
+      #   id: get_release_details
+      #   shell: bash
+      #   run: |
+      #         set -e
+      #         set -u
+      #         set -o pipefail
+      #         printf 'GITHUB_SHA: %s\n' "${GITHUB_SHA}"
+      #         printf 'GITHUB_REF: %s\n' "${GITHUB_REF}"
+      #         year="$(date '+%y')"
+      #         month="$(date '+%m')"
+      # - name: Tarball url
+      #   run: echo "${{ github.server_url }}/${{ github.repository }}/archive/refs/tags/${{ github.ref_name }}.tar.gz"
       - name: Send pull-request
         run: |
               ORGANISATION='molgenis'
@@ -55,7 +56,7 @@ jobs:
               # Configure committer identity.
               #
               #git config user.email "some-user@some-domain.com"
-              #git config user.name "Some User"
+              git config user.name "github-new-release-action[bot]"
               #
               # Create a new feature branch for the changes.
               #
@@ -119,13 +120,13 @@ jobs:
               #
               # Commit changes and push feature branch to origin.
               #
-              git add .
+              git add "${MODULE_NAME:0:1}/${MODULE_NAME}/${MODULE_NAME}-${MODULE_VERSION}.eb"
               git commit -m "New/updated EasyConfig for ${MODULE_NAME}/${MODULE_VERSION}."
               git push origin "${BRANCH}"
               #
               # Authorize GitHub CLI and create PR.
               #
-              gh auth login --with-token "${{ secrets.ACCESS_TOKEN }}"
+              gh auth login --with-token "${{ secrets.take_it_easyconfigs_pat }}"
               gh pr create \
                 --body '' \
                 --title "Auto PR: New/updated EasyConfig for ${MODULE_NAME}/${MODULE_VERSION}." \
