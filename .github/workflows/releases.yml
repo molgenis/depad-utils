@@ -129,7 +129,7 @@ jobs:
               git status
               echo '== 3 ============================================'
               git pull origin
-              git push --set-upstream origin "${BRANCH}"
+              git push --force --set-upstream origin "${BRANCH}"
               echo '== 4 ============================================'
               git status
               echo '== 5 ============================================'
