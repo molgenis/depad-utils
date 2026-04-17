@@ -124,7 +124,7 @@ jobs:
               git status
               git add "${MODULE_NAME:0:1}/${MODULE_NAME}/${MODULE_NAME}-${MODULE_VERSION}.eb"
               git commit -m "New/updated EasyConfig for ${MODULE_NAME}/${MODULE_VERSION}."
-              git push origin "${BRANCH}"
+              git push --set-upstream origin "${BRANCH}"
               #
               # Authorize GitHub CLI and create PR.
               #
