@@ -119,9 +119,15 @@ jobs:
               #
               echo "${{ secrets.take_it_easyconfigs_pat }}" | gh auth login --with-token
               echo '=============================================='
-              gh pr create \
-                --body '' \
-                --title "Auto PR: New/updated EasyConfig for ${MODULE_NAME}/${MODULE_VERSION}." \
-                --head "${BRANCH}" \
-                --base 'main' \
-                --reviewer 'molgenis/Analysis-team'
+              gh pr edit \
+                  "${BRANCH}" \
+                  --body '' \
+                  --title "Auto PR: New/updated EasyConfig for ${MODULE_NAME}/${MODULE_VERSION}." \
+                  --reviewer 'molgenis/Analysis-team' \
+                && gh pr reopen "${BRANCH}" \
+                || gh pr create \
+                  --body '' \
+                  --title "Auto PR: New/updated EasyConfig for ${MODULE_NAME}/${MODULE_VERSION}." \
+                  --head "${BRANCH}" \
+                  --base 'main' \
+                  --reviewer 'molgenis/Analysis-team'
