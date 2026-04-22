@@ -123,11 +123,11 @@ jobs:
                   "${BRANCH}" \
                   --body '' \
                   --title "Auto PR: New/updated EasyConfig for ${MODULE_NAME}/${MODULE_VERSION}." \
-                  --add-reviewer 'molgenis/Analysist-eam' \
+                  --add-reviewer 'molgenis/analysis-team' \
                 && gh pr reopen "${BRANCH}" \
                 || gh pr create \
                   --body '' \
                   --title "Auto PR: New/updated EasyConfig for ${MODULE_NAME}/${MODULE_VERSION}." \
                   --head "${BRANCH}" \
                   --base 'main' \
-                  --add-reviewer 'molgenis/Analysis-team'
+                  --add-reviewer 'molgenis/analysis-team'
