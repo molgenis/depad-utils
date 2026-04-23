@@ -18,6 +18,25 @@ jobs:
     steps:
       - name: Send pull-request
         run: |
+              #
+              # In order for this code to work we need:
+              #  * The team invited to review the PR must be public.
+              #  * The bot account used to create the PR:
+              #     * Must NOT be a member of the team invited to review the PR.
+              #     * Must have a Personal Access Token (PAT)
+              #        * Resource owner: ORGANISTION
+              #        * with permissions/scope on REPOSITORY where the PR will be created - Contents: read & write
+              #        * with permissions/scope on REPOSITORY where the PR will be created - Pull requests: read only
+              #          This will automagically also assign:
+              #        * with permissions/scope on REPOSITORY where the PR will be created - Metadata: read only
+              #        * with permissions/scope on the ORGANISATION - Members: read only
+              #        * with permissions/scope on the ORGANISATION - Projects: read only
+              #  * The PAT created for the bot account with "resource owner" ORGANISATION
+              #    will create a request for approval of that PAT in the ORGANISATION;
+              #    An ORGANISATION admin needs to approve the PAT before it can be used.
+              #  * The value of the PAT must be added as secret for the REPOSITORY repo
+              #    and in the scope of an environment named "releases".
+              #
               ORGANISATION='molgenis'
               REPOSITORY='take-it-easyconfigs'
               MODULE_NAME="${{ github.event.repository.name }}"
