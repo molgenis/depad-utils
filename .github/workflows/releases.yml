@@ -37,7 +37,8 @@ jobs:
               #
               git config user.email 'analysis-jenkins[bot]@users.noreply.github.com'
               git config user.name 'analysis-jenkins[bot]'
-              git config --global 'url.https://${{ secrets.take_it_easyconfigs_pat }}@github.com/.insteadOf' 'https://github.com'
+              #git config --global 'url.https://${{ secrets.take_it_easyconfigs_pat }}@github.com/.insteadOf' 'https://github.com/'
+              git config 'url.https://${{ secrets.TAKE_IT_EASYCONFIGS_PAT }}@github.com/.insteadOf' 'https://github.com/'
               #
               # Create a new feature branch for the changes.
               #
@@ -117,7 +118,7 @@ jobs:
               #
               # Authorize GitHub CLI and create PR.
               #
-              echo "${{ secrets.take_it_easyconfigs_pat }}" | gh auth login --with-token
+              echo "${{ secrets.TAKE_IT_EASYCONFIGS_PAT }}" | gh auth login --with-token
               echo '=============================================='
               gh pr edit \
                   "${BRANCH}" \
@@ -130,4 +131,4 @@ jobs:
                   --title "Auto PR: New/updated EasyConfig for ${MODULE_NAME}/${MODULE_VERSION}." \
                   --head "${BRANCH}" \
                   --base 'main' \
-                  --add-reviewer 'molgenis/analysis-team'
+                  --reviewer 'molgenis/analysis-team'
