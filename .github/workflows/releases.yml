@@ -103,8 +103,8 @@ jobs:
               # (Mode may by masked by umask.)
               #
               postinstallcmds = [
-                  'for executable in \$(ls -1 "%(installdir)s/bin/"* 2> /dev/null | grep -v ".cfg"); do chmod 775 "\${executable}"; done',
-                  'chmod -R g+rwX,o+rX,o-w "%(installdir)s/"*'
+                  'chmod -R g+rwX,o+rX,o-w "%(installdir)s/"*',
+                  'chmod a+x "%(installdir)s/bin/"* ',
               ]
 
               #
