@@ -37,6 +37,7 @@ jobs:
               #  * The value of the PAT must be added as secret for the REPOSITORY repo
               #    and in the scope of an environment named "releases".
               #
+              export GH_TELEMETRY=false
               ORGANISATION='molgenis'
               REPOSITORY='take-it-easyconfigs'
               MODULE_NAME="${{ github.event.repository.name }}"
@@ -137,6 +138,7 @@ jobs:
               #
               # Authorize GitHub CLI and create PR.
               #
+              gh config set telemetry disabled
               echo "${{ secrets.TAKE_IT_EASYCONFIGS_PAT }}" | gh auth login --with-token
               echo '=============================================='
               gh pr edit \
